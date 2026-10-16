@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "PasswordVault.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "PasswordVault.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

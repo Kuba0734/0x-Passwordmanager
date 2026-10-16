@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Password Vault</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="bg" aria-hidden="true">
+    <span class="blob a"></span><span class="blob b"></span><span class="blob c"></span>
+  </div>
+
+  <header class="top">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </div>
+      <div>
+        <div class="name">Password Vault</div>
+        <div class="state" id="stateLabel"><i class="dot"></i><span>Verbinde …</span></div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="lockBtn" title="Tresor sperren" aria-label="Tresor sperren" hidden>
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      </button>
+      <button class="icon-btn" id="settingsBtn" title="Einstellungen" aria-label="Einstellungen">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="views">
+
+    <!-- Laden -->
+    <section class="view active" data-view="loading">
+      <div class="skeleton"><i></i><i></i><i></i><i></i></div>
+    </section>
+
+    <!-- App nicht erreichbar -->
+    <section class="view center" data-view="offline">
+      <div class="hero warn">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>
+      </div>
+      <h2>App nicht erreichbar</h2>
+      <p>Starte <b>Password Vault</b> auf deinem PC. Die Erweiterung verbindet sich automatisch.</p>
+      <p class="hint">Prüfe in der App unter Einstellungen → Browser-Erweiterung, ob die Verbindung aktiviert ist.</p>
+      <button class="btn primary" id="retryBtn">Erneut versuchen</button>
+    </section>
+
+    <!-- Nicht gekoppelt -->
+    <section class="view center" data-view="unpaired">
+      <div class="hero">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+      </div>
+      <h2>Mit der App koppeln</h2>
+      <p>Einmalig bestätigen – danach füllt die Erweiterung Logins direkt aus deinem Tresor aus.</p>
+      <p class="error" id="pairError" hidden></p>
+      <button class="btn primary" id="pairBtn">Jetzt koppeln</button>
+    </section>
+
+    <!-- Kopplung läuft -->
+    <section class="view center" data-view="pairing">
+      <p class="eyebrow">Bestätige diesen Code in der App</p>
+      <div class="code" id="pairCode"></div>
+      <div class="waiting"><span></span><span></span><span></span></div>
+      <p class="hint">Die Password-Vault-App springt jetzt nach vorne (oder blinkt in der Taskleiste) und zeigt „Browser koppeln“. Stimmen die Ziffern überein, klicke dort auf <b>Erlauben</b>.</p>
+      <button class="btn ghost" id="cancelPairBtn">Abbrechen</button>
+    </section>
+
+    <!-- Gesperrt -->
+    <section class="view center" data-view="locked">
+      <div class="hero locked" id="lockHero">
+        <span class="ring"></span><span class="ring r2"></span>
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path id="shackle" d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <h2>Tresor gesperrt</h2>
+      <form id="unlockForm" class="unlock" autocomplete="off">
+        <div class="field">
+          <input type="password" id="masterInput" placeholder="Master-Passwort" aria-label="Master-Passwort" autocomplete="off" spellcheck="false">
+          <button type="button" class="eye" id="eyeBtn" aria-label="Passwort anzeigen">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <p class="error" id="unlockError" hidden></p>
+        <button class="btn primary" id="unlockBtn" type="submit"><span>Entsperren</span><i class="spinner"></i></button>
+      </form>
+    </section>
+
+    <!-- Hauptansicht -->
+    <section class="view main" data-view="main">
+      <div class="search">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input id="search" placeholder="Tresor durchsuchen …" aria-label="Tresor durchsuchen" spellcheck="false">
+      </div>
+
+      <nav class="tabs" role="tablist">
+        <span class="pill" id="tabPill"></span>
+        <button role="tab" data-tab="site" class="on">Diese Seite</button>
+        <button role="tab" data-tab="all">Alle</button>
+        <button role="tab" data-tab="gen">Generator</button>
+      </nav>
+
+      <div class="panels">
+        <div class="panel on" data-panel="site">
+          <div class="site-host" id="siteHost"></div>
+          <ul class="list" id="siteList"></ul>
+          <div class="empty" id="siteEmpty" hidden>
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+            </div>
+            <b>Noch kein Login für diese Seite</b>
+            <span id="siteEmptyText">Melde dich einfach an – die Erweiterung bietet dann das Speichern an.</span>
+            <button class="btn primary small" id="addHereBtn">Login hinzufügen</button>
+          </div>
+        </div>
+
+        <div class="panel" data-panel="all">
+          <ul class="list" id="allList"></ul>
+          <div class="empty" id="allEmpty" hidden>
+            <b>Keine Treffer</b>
+            <span>Versuche einen anderen Suchbegriff.</span>
+          </div>
+        </div>
+
+        <div class="panel" data-panel="gen">
+          <div class="gen-out">
+            <div class="gen-pw mono" id="genPw"></div>
+            <div class="meter"><i id="genBar"></i></div>
+            <div class="gen-meta"><span id="genLabel"></span><span id="genBits"></span></div>
+          </div>
+          <div class="gen-actions">
+            <button class="btn primary" id="genNewBtn">
+              <svg id="genSpin" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+              Neu
+            </button>
+            <button class="btn ghost" id="genCopyBtn">Kopieren</button>
+            <button class="btn ghost" id="genInsertBtn">Einfügen</button>
+          </div>
+          <label class="slider">
+            <span>Länge <b id="genLen">20</b></span>
+            <input type="range" id="genRange" min="8" max="64" value="20">
+          </label>
+          <div class="chips" id="genChips">
+            <button class="chip on" data-opt="upper">A–Z</button>
+            <button class="chip on" data-opt="lower">a–z</button>
+            <button class="chip on" data-opt="digits">0–9</button>
+            <button class="chip on" data-opt="symbols">!@#</button>
+          </div>
+        </div>
+
+        <div class="panel" data-panel="add">
+          <form id="addForm" class="add" autocomplete="off">
+            <h3>Neuer Login</h3>
+            <input id="addTitle" placeholder="Titel" aria-label="Titel" required>
+            <input id="addUser" placeholder="Benutzername / E-Mail" aria-label="Benutzername">
+            <div class="field">
+              <input id="addPw" class="mono" placeholder="Passwort" aria-label="Passwort">
+              <button type="button" class="eye" id="addGenBtn" title="Passwort generieren" aria-label="Passwort generieren">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+              </button>
+            </div>
+            <input id="addUrl" placeholder="https://…" aria-label="Website">
+            <div class="row-btns">
+              <button type="button" class="btn ghost" id="addCancelBtn">Abbrechen</button>
+              <button type="submit" class="btn primary">Speichern</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Einstellungen -->
+    <section class="view settings" data-view="settings">
+      <button class="back" id="backBtn">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Zurück
+      </button>
+      <h2>Einstellungen</h2>
+      <div class="card">
+        <div><b>Verbindung</b><small id="setConn">–</small></div>
+      </div>
+      <div class="card">
+        <div><b>Kopplung</b><small>Entfernt das Zugriffs-Token aus diesem Browser.</small></div>
+        <button class="btn ghost small" id="unpairBtn">Aufheben</button>
+      </div>
+      <div class="card">
+        <div><b>„Nie speichern“-Liste</b><small id="neverText">–</small></div>
+        <button class="btn ghost small" id="clearNeverBtn">Leeren</button>
+      </div>
+      <div class="card">
+        <div><b>Tastenkürzel</b><small><kbd>Strg</kbd> + <kbd>Umschalt</kbd> + <kbd>L</kbd> füllt den besten Treffer aus</small></div>
+      </div>
+      <p class="hint">Password Vault 2.0 · Alle Daten bleiben lokal auf deinem PC.</p>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

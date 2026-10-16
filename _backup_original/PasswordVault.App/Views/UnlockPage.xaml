@@ -1,0 +1,73 @@
+<Page
+    x:Class="PasswordVault.App.Views.UnlockPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:ani="using:CommunityToolkit.WinUI.Animations"
+    Background="Transparent">
+
+    <Grid HorizontalAlignment="Center"
+          VerticalAlignment="Center"
+          Width="400">
+
+        <StackPanel Spacing="24">
+
+            <!-- App-Icon / Titel -->
+            <StackPanel Spacing="8"
+                        HorizontalAlignment="Center">
+                <FontIcon Glyph="&#xE72E;"
+                          FontSize="64"
+                          Foreground="{StaticResource VaultAccentBrush}"
+                          HorizontalAlignment="Center" />
+                <TextBlock Text="Password Vault"
+                           FontSize="28"
+                           FontWeight="SemiBold"
+                           HorizontalAlignment="Center" />
+                <TextBlock Text="Gib dein Master-Passwort ein"
+                           FontSize="14"
+                           Foreground="{ThemeResource
+                               TextFillColorSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Passwort-Eingabe -->
+            <PasswordBox x:Name="MasterPasswordBox"
+                         PlaceholderText="Master-Passwort"
+                         MaxLength="128"
+                         KeyDown="PasswordBox_KeyDown"
+                         CornerRadius="8" />
+
+            <!-- Fehlermeldung (unsichtbar) -->
+            <InfoBar x:Name="ErrorInfoBar"
+                     IsOpen="False"
+                     Severity="Error"
+                     Title="Falsches Passwort"
+                     Message="Bitte versuche es erneut."
+                     IsClosable="False" />
+
+            <!-- Entsperren-Button -->
+            <Button x:Name="UnlockButton"
+                    Content="Entsperren"
+                    Style="{StaticResource AccentButtonStyle}"
+                    HorizontalAlignment="Stretch"
+                    Height="40"
+                    CornerRadius="8"
+                    Click="UnlockButton_Click" />
+
+            <!-- Windows Hello / PIN Button -->
+            <Button x:Name="WindowsHelloButton"
+                    HorizontalAlignment="Stretch"
+                    Height="40"
+                    CornerRadius="8"
+                    Visibility="Collapsed"
+                    Click="WindowsHelloButton_Click">
+                <StackPanel Orientation="Horizontal"
+                            Spacing="8">
+                    <FontIcon Glyph="&#xEB68;"
+                              FontSize="16" />
+                    <TextBlock Text="Mit Windows PIN entsperren" />
+                </StackPanel>
+            </Button>
+
+        </StackPanel>
+    </Grid>
+</Page>

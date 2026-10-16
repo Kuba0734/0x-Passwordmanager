@@ -1,0 +1,118 @@
+<Page
+    x:Class="PasswordVault.App.Views.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Background="Transparent">
+
+    <Page.Resources>
+        <Style x:Key="NavCountStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextFillColorTertiaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+        </Style>
+        <Style TargetType="NavigationViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Page.Resources>
+
+    <Page.KeyboardAccelerators>
+        <KeyboardAccelerator Modifiers="Control" Key="N" Invoked="NewEntry_Accelerator" />
+        <KeyboardAccelerator Modifiers="Control" Key="F" Invoked="Search_Accelerator" />
+        <KeyboardAccelerator Modifiers="Control" Key="L" Invoked="Lock_Accelerator" />
+        <KeyboardAccelerator Modifiers="Control" Key="G" Invoked="Generator_Accelerator" />
+    </Page.KeyboardAccelerators>
+
+    <Grid Padding="0,48,0,0">
+        <NavigationView x:Name="NavView"
+                        PaneDisplayMode="Left"
+                        OpenPaneLength="264"
+                        IsBackButtonVisible="Collapsed"
+                        IsSettingsVisible="False"
+                        IsTitleBarAutoPaddingEnabled="False"
+                        SelectionChanged="NavView_SelectionChanged"
+                        ItemInvoked="NavView_ItemInvoked">
+
+            <NavigationView.MenuItems>
+                <NavigationViewItemHeader Content="Tresor" />
+
+                <NavigationViewItem Tag="all" IsSelected="True" AutomationProperties.Name="Alle Einträge">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE8A9;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Alle Einträge" />
+                        <TextBlock x:Name="CountAll" Style="{StaticResource NavCountStyle}" />
+                    </Grid>
+                </NavigationViewItem>
+                <NavigationViewItem Tag="favorites" AutomationProperties.Name="Favoriten">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE734;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Favoriten" />
+                        <TextBlock x:Name="CountFavorites" Style="{StaticResource NavCountStyle}" />
+                    </Grid>
+                </NavigationViewItem>
+
+                <NavigationViewItemHeader Content="Kategorien" />
+
+                <NavigationViewItem Tag="logins" AutomationProperties.Name="Logins">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE77B;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Logins" />
+                        <TextBlock x:Name="CountLogins" Style="{StaticResource NavCountStyle}" />
+                    </Grid>
+                </NavigationViewItem>
+                <NavigationViewItem Tag="cards" AutomationProperties.Name="Kreditkarten">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE8C7;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Kreditkarten" />
+                        <TextBlock x:Name="CountCards" Style="{StaticResource NavCountStyle}" />
+                    </Grid>
+                </NavigationViewItem>
+                <NavigationViewItem Tag="notes" AutomationProperties.Name="Notizen">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE70B;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Notizen" />
+                        <TextBlock x:Name="CountNotes" Style="{StaticResource NavCountStyle}" />
+                    </Grid>
+                </NavigationViewItem>
+                <NavigationViewItem Tag="general" AutomationProperties.Name="Allgemein">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE72E;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Allgemein" />
+                        <TextBlock x:Name="CountGeneral" Style="{StaticResource NavCountStyle}" />
+                    </Grid>
+                </NavigationViewItem>
+
+                <NavigationViewItemHeader Content="Werkzeuge" />
+
+                <NavigationViewItem Tag="security" AutomationProperties.Name="Sicherheitscheck">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xEA18;" /></NavigationViewItem.Icon>
+                    <Grid>
+                        <TextBlock Text="Sicherheitscheck" />
+                        <InfoBadge x:Name="SecurityBadge"
+                                   HorizontalAlignment="Right"
+                                   VerticalAlignment="Center"
+                                   Visibility="Collapsed"
+                                   Background="{StaticResource WarningBrush}" />
+                    </Grid>
+                </NavigationViewItem>
+                <NavigationViewItem Tag="generator" Content="Passwort-Generator">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE8B1;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <NavigationView.FooterMenuItems>
+                <NavigationViewItem Tag="lock"
+                                    Content="Tresor sperren"
+                                    SelectsOnInvoked="False"
+                                    ToolTipService.ToolTip="Sperren (Strg+L)" AutomationProperties.Name="Sperren (Strg+L)">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE72E;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Tag="settings" Content="Einstellungen">
+                    <NavigationViewItem.Icon><FontIcon Glyph="&#xE713;" /></NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.FooterMenuItems>
+
+            <Frame x:Name="ContentFrame" />
+        </NavigationView>
+    </Grid>
+</Page>

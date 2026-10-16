@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "Password Vault",
+  "version": "2.0.0",
+  "description": "Füllt Logins aus deinem lokalen Password Vault aus, generiert sichere Passwörter und speichert neue Zugangsdaten.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Password Vault",
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "permissions": ["storage", "activeTab", "contextMenus"],
+  "host_permissions": ["http://localhost:27832/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["content/content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "commands": {
+    "autofill": {
+      "suggested_key": { "default": "Ctrl+Shift+L" },
+      "description": "Login auf dieser Seite ausfüllen"
+    }
+  }
+}

@@ -1,0 +1,192 @@
+<Page
+    x:Class="PasswordVault.App.Views.SecurityPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:PasswordVault.App.Helpers"
+    xmlns:local="using:PasswordVault.App.Views"
+    Background="Transparent">
+
+    <Page.Resources>
+        <Style x:Key="StatCardStyle" TargetType="Button">
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="18,16" />
+            <Setter Property="CornerRadius" Value="18" />
+            <Setter Property="helpers:Motion.HoverLift" Value="True" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer>
+        <StackPanel x:Name="Root" Padding="32,20,32,40" Spacing="18" MaxWidth="1100">
+
+            <StackPanel Orientation="Horizontal" Spacing="14">
+                <Border Width="48" Height="48" CornerRadius="16" Background="{StaticResource VaultGradientBrush}">
+                    <FontIcon Glyph="&#xEA18;" FontSize="20" Foreground="White" />
+                </Border>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="Sicherheitscheck" Style="{StaticResource PageTitleStyle}" />
+                    <TextBlock Text="Analyse deiner gespeicherten Passwörter – komplett offline."
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Score -->
+            <Border x:Name="ScoreCard" Style="{StaticResource CardStyle}" CornerRadius="22" Padding="28">
+                <Grid ColumnSpacing="32">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Width="150" Height="150">
+                        <ProgressRing x:Name="ScoreRingTrack"
+                                      Width="150" Height="150"
+                                      IsIndeterminate="False" Value="100"
+                                      Foreground="{ThemeResource SubtleFillColorSecondaryBrush}"
+                                      Background="Transparent" />
+                        <ProgressRing x:Name="ScoreRing"
+                                      Width="150" Height="150"
+                                      IsIndeterminate="False" Value="0"
+                                      Background="Transparent" />
+                        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                            <TextBlock x:Name="ScoreText" Text="0" FontSize="44" FontWeight="Bold"
+                                       HorizontalAlignment="Center" />
+                            <TextBlock Text="von 100" HorizontalAlignment="Center"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </Grid>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
+                        <TextBlock x:Name="ScoreTitle" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock x:Name="ScoreDescription"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <TextBlock x:Name="ScoreMeta"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Kennzahlen -->
+            <Grid x:Name="StatsGrid" ColumnSpacing="14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <Button x:Name="WeakCard" Style="{StaticResource StatCardStyle}" Tag="weak" AutomationProperties.Name="Schwache Passwörter" Click="StatCard_Click">
+                    <StackPanel Spacing="10">
+                        <Border Width="36" Height="36" CornerRadius="12" Background="#33EF4444" HorizontalAlignment="Left">
+                            <FontIcon Glyph="&#xE7BA;" FontSize="16" Foreground="{StaticResource DangerBrush}" />
+                        </Border>
+                        <TextBlock x:Name="WeakCount" Text="0" FontSize="28" FontWeight="Bold" />
+                        <TextBlock Text="Schwache Passwörter" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="ReusedCard" Grid.Column="1" Style="{StaticResource StatCardStyle}" Tag="reused" AutomationProperties.Name="Mehrfach verwendet" Click="StatCard_Click">
+                    <StackPanel Spacing="10">
+                        <Border Width="36" Height="36" CornerRadius="12" Background="#33F59E0B" HorizontalAlignment="Left">
+                            <FontIcon Glyph="&#xE8C8;" FontSize="16" Foreground="{StaticResource WarningBrush}" />
+                        </Border>
+                        <TextBlock x:Name="ReusedCount" Text="0" FontSize="28" FontWeight="Bold" />
+                        <TextBlock Text="Mehrfach verwendet" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="OldCard" Grid.Column="2" Style="{StaticResource StatCardStyle}" Tag="old" AutomationProperties.Name="Älter als 1 Jahr" Click="StatCard_Click">
+                    <StackPanel Spacing="10">
+                        <Border Width="36" Height="36" CornerRadius="12" Background="#333B82F6" HorizontalAlignment="Left">
+                            <FontIcon Glyph="&#xE823;" FontSize="16" Foreground="{StaticResource InfoBrush}" />
+                        </Border>
+                        <TextBlock x:Name="OldCount" Text="0" FontSize="28" FontWeight="Bold" />
+                        <TextBlock Text="Älter als 1 Jahr" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Button>
+                <Button x:Name="InsecureCard" Grid.Column="3" Style="{StaticResource StatCardStyle}" Tag="insecure" AutomationProperties.Name="Unverschlüsselte Seiten" Click="StatCard_Click">
+                    <StackPanel Spacing="10">
+                        <Border Width="36" Height="36" CornerRadius="12" Background="#33A855F7" HorizontalAlignment="Left">
+                            <FontIcon Glyph="&#xE785;" FontSize="16" Foreground="#A855F7" />
+                        </Border>
+                        <TextBlock x:Name="InsecureCount" Text="0" FontSize="28" FontWeight="Bold" />
+                        <TextBlock Text="Unverschlüsselte Seiten" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Betroffene Einträge -->
+            <Border x:Name="IssuesCard" Style="{StaticResource CardStyle}" CornerRadius="22" Padding="20,18">
+                <StackPanel Spacing="10">
+                    <Grid>
+                        <TextBlock x:Name="IssuesTitle" Text="Alle Hinweise" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <HyperlinkButton x:Name="ShowAllButton" Content="Alle anzeigen" HorizontalAlignment="Right"
+                                         Padding="0" Click="ShowAll_Click" Visibility="Collapsed" />
+                    </Grid>
+                    <ListView x:Name="IssueList"
+                              SelectionMode="None"
+                              IsItemClickEnabled="True"
+                              ItemClick="IssueList_ItemClick">
+                        <ListView.ItemContainerTransitions>
+                            <TransitionCollection>
+                                <EntranceThemeTransition IsStaggeringEnabled="True" />
+                                <AddDeleteThemeTransition />
+                                <RepositionThemeTransition />
+                            </TransitionCollection>
+                        </ListView.ItemContainerTransitions>
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                                <Setter Property="Padding" Value="8,6" />
+                                <Setter Property="Margin" Value="0,1" />
+                                <Setter Property="CornerRadius" Value="12" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="local:SecurityIssue">
+                                <Grid ColumnSpacing="14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Border Width="38" Height="38" CornerRadius="12"
+                                            Background="{x:Bind helpers:Ui.AvatarBrush(Title)}">
+                                        <TextBlock Text="{x:Bind helpers:Ui.Initial(Title)}" Foreground="White"
+                                                   FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                    </Border>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <TextBlock Text="{x:Bind Title}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{x:Bind Hint}" Style="{StaticResource CaptionTextBlockStyle}"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="10">
+                                        <Border Style="{StaticResource ChipStyle}" Background="{x:Bind Tint}">
+                                            <TextBlock Text="{x:Bind Reason}" FontSize="11" />
+                                        </Border>
+                                        <FontIcon Glyph="&#xE76C;" FontSize="12" VerticalAlignment="Center"
+                                                  Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+
+                    <StackPanel x:Name="AllGood" Visibility="Collapsed" Spacing="8" Padding="0,24" HorizontalAlignment="Center">
+                        <Border x:Name="AllGoodIcon" Width="64" Height="64" CornerRadius="22"
+                                Background="{StaticResource SuccessBrush}" HorizontalAlignment="Center">
+                            <FontIcon Glyph="&#xE73E;" FontSize="28" Foreground="White" />
+                        </Border>
+                        <TextBlock Text="Alles im grünen Bereich" Style="{StaticResource SubtitleTextBlockStyle}"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock x:Name="AllGoodText" Text="Keine Probleme gefunden – weiter so!"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

@@ -1,0 +1,45 @@
+# Baut die iPhone-App auf einem Mac von GitHub und stellt sie als PasswordVault.ipa zum Download bereit.
+# Die .ipa ist unsigniert – Sideloadly signiert sie beim Installieren mit deiner kostenlosen Apple-ID.
+name: iPhone-App bauen
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'PasswordVault.Mobile/**'
+      - 'PasswordVault.Core/**'
+      - '.github/workflows/ios.yml'
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: iOS-Werkzeuge installieren
+        run: dotnet workload install maui-ios
+
+      - name: App bauen
+        run: dotnet build PasswordVault.Mobile -c Release -f net10.0-ios -p:RuntimeIdentifier=ios-arm64 -p:EnableCodeSigning=false
+
+      - name: IPA packen
+        run: |
+          app=$(find PasswordVault.Mobile/bin/Release -type d -name "*.app" -path "*ios-arm64*" | head -n 1)
+          test -n "$app" || { echo "Kein .app-Bundle gefunden"; exit 1; }
+          mkdir -p ipa/Payload
+          cp -R "$app" ipa/Payload/
+          (cd ipa && zip -qry ../PasswordVault.ipa Payload)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PasswordVault-iPhone
+          path: PasswordVault.ipa
+          retention-days: 30

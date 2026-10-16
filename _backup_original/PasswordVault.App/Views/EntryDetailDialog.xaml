@@ -1,0 +1,85 @@
+<ContentDialog
+    x:Class="PasswordVault.App.Views.EntryDetailDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Eintrag bearbeiten"
+    PrimaryButtonText="Speichern"
+    SecondaryButtonText="Löschen"
+    CloseButtonText="Abbrechen"
+    DefaultButton="Primary"
+    CornerRadius="12"
+    MinWidth="450">
+
+    <StackPanel Spacing="16" MinWidth="400">
+
+        <TextBox x:Name="TitleBox"
+                 Header="Titel" CornerRadius="8" />
+
+        <TextBox x:Name="UsernameBox"
+                 Header="Benutzername / E-Mail"
+                 CornerRadius="8" />
+
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <PasswordBox x:Name="PasswordBox"
+                         Header="Passwort"
+                         CornerRadius="8" />
+            <Button Grid.Column="1"
+                    ToolTipService.ToolTip="Kopieren"
+                    VerticalAlignment="Bottom"
+                    Margin="8,0,0,0"
+                    Click="CopyPassword_Click">
+                <FontIcon Glyph="&#xE8C8;"
+                          FontSize="14" />
+            </Button>
+            <Button Grid.Column="2"
+                    ToolTipService.ToolTip="Generieren"
+                    VerticalAlignment="Bottom"
+                    Margin="4,0,0,0"
+                    Click="GeneratePassword_Click">
+                <FontIcon Glyph="&#xE8B1;"
+                          FontSize="14" />
+            </Button>
+        </Grid>
+
+        <!-- Passwort-Stärke -->
+        <ProgressBar x:Name="StrengthBar"
+                     Maximum="100" Value="0"
+                     Height="4" CornerRadius="2" />
+        <TextBlock x:Name="StrengthText"
+                   FontSize="12"
+                   Foreground="{ThemeResource
+                       TextFillColorSecondaryBrush}" />
+
+        <TextBox x:Name="UrlBox"
+                 Header="Website-URL"
+                 CornerRadius="8" />
+
+        <ComboBox x:Name="CategoryBox"
+                  Header="Kategorie"
+                  HorizontalAlignment="Stretch"
+                  CornerRadius="8">
+            <ComboBoxItem Content="Allgemein" />
+            <ComboBoxItem Content="Logins" />
+            <ComboBoxItem Content="Kreditkarten" />
+            <ComboBoxItem Content="Notizen" />
+        </ComboBox>
+
+        <ToggleSwitch x:Name="FavoriteToggle"
+                      Header="Favorit"
+                      OffContent="Nein"
+                      OnContent="Ja" />
+
+        <TextBox x:Name="NotesBox"
+                 Header="Notizen"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 MinHeight="80"
+                 CornerRadius="8" />
+
+    </StackPanel>
+</ContentDialog>

@@ -1,0 +1,180 @@
+<ContentDialog
+    x:Class="PasswordVault.App.Views.EntryEditorDialog"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Style="{StaticResource DefaultContentDialogStyle}"
+    PrimaryButtonText="Speichern"
+    CloseButtonText="Abbrechen"
+    DefaultButton="Primary">
+
+    <ContentDialog.Resources>
+        <x:Double x:Key="ContentDialogMaxWidth">640</x:Double>
+        <Style x:Key="CategoryToggleStyle" TargetType="ToggleButton" BasedOn="{StaticResource DefaultToggleButtonStyle}">
+            <Setter Property="CornerRadius" Value="10" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+        </Style>
+    </ContentDialog.Resources>
+
+    <StackPanel x:Name="Form" Spacing="16" Width="500">
+
+        <!-- Titel mit Live-Avatar -->
+        <Grid ColumnSpacing="14">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border x:Name="Avatar"
+                    Width="56" Height="56"
+                    CornerRadius="18"
+                    VerticalAlignment="Bottom">
+                <TextBlock x:Name="AvatarInitial"
+                           Foreground="White" FontSize="22" FontWeight="Bold"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+            </Border>
+            <TextBox x:Name="TitleBox"
+                     Grid.Column="1"
+                     Header="Titel"
+                     PlaceholderText="z.B. GitHub, Netflix, Online-Banking …"
+                     TextChanged="TitleBox_TextChanged" />
+        </Grid>
+
+        <!-- Kategorie -->
+        <StackPanel Spacing="6">
+            <TextBlock Text="Kategorie" />
+            <Grid x:Name="CategoryGrid" ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ToggleButton Grid.Column="0" Tag="Logins" Style="{StaticResource CategoryToggleStyle}" Click="Category_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE77B;" FontSize="13" />
+                        <TextBlock Text="Login" />
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton Grid.Column="1" Tag="Kreditkarten" Style="{StaticResource CategoryToggleStyle}" Click="Category_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE8C7;" FontSize="13" />
+                        <TextBlock Text="Karte" />
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton Grid.Column="2" Tag="Notizen" Style="{StaticResource CategoryToggleStyle}" Click="Category_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE70B;" FontSize="13" />
+                        <TextBlock Text="Notiz" />
+                    </StackPanel>
+                </ToggleButton>
+                <ToggleButton Grid.Column="3" Tag="Allgemein" Style="{StaticResource CategoryToggleStyle}" Click="Category_Click">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="&#xE72E;" FontSize="13" />
+                        <TextBlock Text="Sonstiges" />
+                    </StackPanel>
+                </ToggleButton>
+            </Grid>
+        </StackPanel>
+
+        <TextBox x:Name="UsernameBox"
+                 Header="Benutzername / E-Mail"
+                 PlaceholderText="name@example.com" />
+
+        <!-- Passwort + Generator -->
+        <StackPanel Spacing="8">
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <PasswordBox x:Name="PasswordInput"
+                             Header="Passwort"
+                             PlaceholderText="Passwort eingeben oder generieren"
+                             PasswordRevealMode="Peek"
+                             PasswordChanged="Password_Changed" />
+                <Button x:Name="GenerateButton"
+                        Grid.Column="1"
+                        VerticalAlignment="Bottom"
+                        MinHeight="32"
+                        CornerRadius="8"
+                        Click="Generate_Click"
+                        ToolTipService.ToolTip="Sicheres Passwort generieren" AutomationProperties.Name="Sicheres Passwort generieren">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon x:Name="GenerateIcon" Glyph="&#xE895;" FontSize="14" />
+                        <TextBlock Text="Generieren" />
+                    </StackPanel>
+                </Button>
+                <DropDownButton Grid.Column="2"
+                                VerticalAlignment="Bottom"
+                                MinHeight="32"
+                                CornerRadius="8"
+                                ToolTipService.ToolTip="Generator-Optionen" AutomationProperties.Name="Generator-Optionen">
+                    <FontIcon Glyph="&#xE713;" FontSize="14" />
+                    <DropDownButton.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedRight">
+                            <StackPanel Width="260" Spacing="10">
+                                <TextBlock Text="Generator" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <Grid>
+                                    <TextBlock Text="Länge" VerticalAlignment="Center" />
+                                    <TextBlock x:Name="LengthValue" HorizontalAlignment="Right"
+                                               FontWeight="SemiBold" VerticalAlignment="Center" />
+                                </Grid>
+                                <Slider x:Name="LengthSlider" Minimum="8" Maximum="64"
+                                        StepFrequency="1" ValueChanged="Options_Changed" />
+                                <CheckBox x:Name="UpperCheck" Content="Großbuchstaben (A–Z)" Click="Options_Changed" />
+                                <CheckBox x:Name="LowerCheck" Content="Kleinbuchstaben (a–z)" Click="Options_Changed" />
+                                <CheckBox x:Name="DigitCheck" Content="Ziffern (0–9)" Click="Options_Changed" />
+                                <CheckBox x:Name="SymbolCheck" Content="Sonderzeichen (!@#…)" Click="Options_Changed" />
+                                <CheckBox x:Name="AmbiguousCheck" Content="Verwechselbare Zeichen meiden" Click="Options_Changed" />
+                            </StackPanel>
+                        </Flyout>
+                    </DropDownButton.Flyout>
+                </DropDownButton>
+            </Grid>
+            <Grid ColumnSpacing="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid Height="5" VerticalAlignment="Center">
+                    <Border CornerRadius="2.5" Background="{ThemeResource SubtleFillColorSecondaryBrush}" />
+                    <Border x:Name="StrengthFill" CornerRadius="2.5" />
+                </Grid>
+                <TextBlock x:Name="StrengthLabel"
+                           Grid.Column="1"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </Grid>
+        </StackPanel>
+
+        <TextBox x:Name="UrlBox"
+                 Header="Website"
+                 PlaceholderText="https://example.com"
+                 InputScope="Url" />
+
+        <TextBox x:Name="NotesBox"
+                 Header="Notizen"
+                 PlaceholderText="Optional: Sicherheitsfragen, PIN-Hinweise, …"
+                 AcceptsReturn="True"
+                 TextWrapping="Wrap"
+                 MinHeight="84"
+                 MaxHeight="180"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto" />
+
+        <ToggleSwitch x:Name="FavoriteToggle"
+                      OnContent="Als Favorit markiert"
+                      OffContent="Kein Favorit" />
+
+        <Border x:Name="ValidationPanel"
+                Visibility="Collapsed"
+                CornerRadius="10"
+                Padding="12,8"
+                Background="#26EF4444">
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <FontIcon Glyph="&#xE783;" FontSize="14" Foreground="{StaticResource DangerBrush}" />
+                <TextBlock x:Name="ValidationText" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
+    </StackPanel>
+</ContentDialog>

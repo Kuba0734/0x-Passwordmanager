@@ -1,0 +1,129 @@
+using PasswordVault.Core.Models;
+
+namespace PasswordVault.Mobile.Pages;
+
+/// <summary>
+/// Details eines Eintrags: alles kopierbar, Passwort ein-/ausblendbar, Website öffnen.
+/// </summary>
+public class EntryPage : ContentPage
+{
+    private readonly string _id;
+    private PasswordEntry? _entry;
+    private bool _showPassword;
+
+    public EntryPage(string id)
+    {
+        _id = id;
+        ToolbarItems.Add(new ToolbarItem("Bearbeiten", null, async () =>
+        {
+            if (_entry != null) await Navigation.PushAsync(new EditEntryPage(_entry));
+        }));
+    }
+
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+        if (!App.Store.IsUnlocked) return;
+
+        // Nach dem Bearbeiten neu laden; gelöscht → zurück zur Liste
+        _entry = App.Store.Get(_id);
+        if (_entry == null)
+        {
+            Navigation.PopAsync();
+            return;
+        }
+        Build(_entry);
+    }
+
+    private void Build(PasswordEntry e)
+    {
+        Title = e.Title;
+        var views = new List<View>();
+
+        var header = new VerticalStackLayout
+        {
+            Spacing = 10,
+            Padding = new Thickness(0, 10, 0, 6),
+            Children =
+            {
+                Ui.Avatar(e.Title, 76),
+                new Label { Text = e.Title, FontSize = 26, FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center },
+                new Label { Text = (e.IsFavorite ? "★ " : "") + e.Category, TextColor = Ui.Muted, FontSize = 14, HorizontalTextAlignment = TextAlignment.Center }
+            }
+        };
+        ((View)header.Children[0]).HorizontalOptions = LayoutOptions.Center;
+        views.Add(header);
+
+        if (!string.IsNullOrEmpty(e.Username))
+            views.Add(Ui.Field("Benutzername", Value(e.Username),
+                Ui.IconButton("⧉", "Benutzername kopieren", (_, _) => Copy(e.Username, "Benutzername kopiert"))));
+
+        if (!string.IsNullOrEmpty(e.Password))
+        {
+            var pw = Value(Mask(e.Password));
+            pw.FontFamily = "Menlo";
+            var toggle = Ui.IconButton("👁", "Passwort anzeigen", (_, _) => { });
+            toggle.Clicked += (_, _) =>
+            {
+                _showPassword = !_showPassword;
+                pw.Text = _showPassword ? e.Password : Mask(e.Password);
+                toggle.Text = _showPassword ? "🙈" : "👁";
+            };
+            views.Add(Ui.Field("Passwort", pw, toggle,
+                Ui.IconButton("⧉", "Passwort kopieren", (_, _) => Copy(e.Password, "Passwort kopiert – wird in 30 s gelöscht"))));
+
+            var (meter, update) = Ui.StrengthMeter();
+            update(e.Password);
+            views.Add(meter);
+        }
+
+        if (!string.IsNullOrEmpty(e.Url))
+            views.Add(Ui.Field("Website", Value(e.Url),
+                Ui.IconButton("↗", "Website öffnen", async (_, _) => await OpenUrl(e.Url)),
+                Ui.IconButton("⧉", "Website kopieren", (_, _) => Copy(e.Url, "Adresse kopiert"))));
+
+        if (!string.IsNullOrEmpty(e.Notes))
+            views.Add(Ui.Field("Notizen", Value(e.Notes, wrap: true)));
+
+        views.Add(new Label
+        {
+            Text = $"Geändert {e.ModifiedAt.ToLocalTime():dd.MM.yyyy HH:mm} · erstellt {e.CreatedAt.ToLocalTime():dd.MM.yyyy}",
+            TextColor = Ui.Muted,
+            FontSize = 12,
+            HorizontalTextAlignment = TextAlignment.Center,
+            Margin = new Thickness(0, 8)
+        });
+
+        var stack = new VerticalStackLayout { Spacing = 12, Padding = new Thickness(16, 8, 16, 30) };
+        foreach (var v in views) stack.Add(v);
+        Content = Ui.PageRoot(new ScrollView { Content = stack });
+        Ui.AnimateIn(views.ToArray());
+    }
+
+    private static Label Value(string text, bool wrap = false) => new()
+    {
+        Text = text,
+        FontSize = 17,
+        LineBreakMode = wrap ? LineBreakMode.WordWrap : LineBreakMode.TailTruncation,
+        Padding = new Thickness(0, 2, 0, 4)
+    };
+
+    private static string Mask(string pw) => new('•', Math.Min(pw.Length, 16));
+
+    private void Copy(string text, string message)
+    {
+        SecureClipboard.Copy(text);
+        Ui.Toast(this, message);
+    }
+
+    private async Task OpenUrl(string url)
+    {
+        if (!url.Contains("://")) url = "https://" + url;
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != "https" && uri.Scheme != "http"))
+        {
+            Ui.Toast(this, "Keine gültige Adresse", error: true);
+            return;
+        }
+        await Launcher.Default.OpenAsync(uri);
+    }
+}
