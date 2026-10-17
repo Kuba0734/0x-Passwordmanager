@@ -13,7 +13,7 @@ public class UnlockPage : ContentPage
     private readonly Entry _repeat = new() { IsPassword = true, Placeholder = "Wiederholen", ReturnType = ReturnType.Go };
     private readonly Label _error = new() { TextColor = Ui.Danger, FontSize = 14, HorizontalTextAlignment = TextAlignment.Center, IsVisible = false };
     private readonly Button _go;
-    private readonly ActivityIndicator _busy = new() { Color = Ui.Violet, IsRunning = false, HeightRequest = 24 };
+    private readonly ActivityIndicator _busy = new() { Color = Ui.Accent, IsRunning = false, HeightRequest = 24 };
     private readonly Border _logo;
     private readonly View _form;
 
@@ -25,17 +25,18 @@ public class UnlockPage : ContentPage
             HeightRequest = 96,
             HorizontalOptions = LayoutOptions.Center,
             StrokeThickness = 0,
-            StrokeShape = new RoundRectangle { CornerRadius = 30 },
-            Background = Ui.AccentGradient,
-            Shadow = new Shadow { Brush = new SolidColorBrush(Ui.Violet), Radius = 40, Opacity = 0.55f, Offset = new Point(0, 10) },
-            Content = new Label { Text = "🔒", FontSize = 44, HorizontalOptions = LayoutOptions.Center, VerticalOptions = LayoutOptions.Center }
+            StrokeShape = new RoundRectangle { CornerRadius = 28 },
+            BackgroundColor = Ui.Accent,
+            // dezenter Glow
+            Shadow = new Shadow { Brush = new SolidColorBrush(Colors.White), Radius = 40, Opacity = 0.12f, Offset = new Point(0, 8) },
+            Content = Ui.Icon(Ui.Icons.Lock, 40, Ui.OnAccent)
         };
 
         var title = new Label
         {
             Text = _create ? "Willkommen" : "Password Vault",
             FontSize = 30,
-            FontAttributes = FontAttributes.Bold,
+            FontFamily = Ui.FontBold,
             HorizontalTextAlignment = TextAlignment.Center
         };
         var subtitle = new Label
@@ -101,6 +102,7 @@ public class UnlockPage : ContentPage
     // Logo "atmet" leicht, solange die Seite offen ist
     private async Task Breathe()
     {
+        if (Ui.ReduceMotion) return;
         await Task.Delay(600);
         while (Handler != null && !_busy.IsRunning)
         {
@@ -131,7 +133,7 @@ public class UnlockPage : ContentPage
                 else App.Store.Unlock(pw);
             });
             HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-            await Task.WhenAll(_logo.ScaleToAsync(1.25, 180), _form.FadeToAsync(0, 180));
+            await Task.WhenAll(_logo.ScaleToAsync(1.08, Ui.Normal, Ui.Ease), _form.FadeToAsync(0, Ui.Fast, Ui.Ease));
             App.ShowVault();
         }
         catch (CryptographicException)

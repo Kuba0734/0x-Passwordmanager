@@ -1,4 +1,4 @@
-using Microsoft.UI.Dispatching;
+﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -30,10 +30,11 @@ public sealed partial class SecurityPage : Page
     private SecurityReport? _report;
     private DispatcherQueueTimer? _countTimer;
 
-    private static readonly Brush DangerTint = new SolidColorBrush(Color.FromArgb(0x40, 0xEF, 0x44, 0x44));
-    private static readonly Brush WarningTint = new SolidColorBrush(Color.FromArgb(0x40, 0xF5, 0x9E, 0x0B));
-    private static readonly Brush InfoTint = new SolidColorBrush(Color.FromArgb(0x40, 0x3B, 0x82, 0xF6));
-    private static readonly Brush PurpleTint = new SolidColorBrush(Color.FromArgb(0x40, 0xA8, 0x55, 0xF7));
+    // Monochrom: nur "schwach" ist ein Fehler und bekommt den Gefahrton, der Rest bleibt neutral
+    private static readonly Brush DangerTint = (Brush)Application.Current.Resources["DangerSurfaceBrush"];
+    private static readonly Brush WarningTint = new SolidColorBrush(Color.FromArgb(0x2E, 0xFF, 0xFF, 0xFF));
+    private static readonly Brush InfoTint = new SolidColorBrush(Color.FromArgb(0x1A, 0xFF, 0xFF, 0xFF));
+    private static readonly Brush PurpleTint = InfoTint;
 
     public SecurityPage()
     {
@@ -42,8 +43,8 @@ public sealed partial class SecurityPage : Page
         Loaded += (_, _) =>
         {
             App.Store.Changed += Store_Changed;
-            Motion.Stagger(Root, 70);
-            Motion.Stagger(StatsGrid, 60, 180);
+            Motion.Stagger(Root);
+            Motion.Stagger(StatsGrid, Motion.StaggerStep, Motion.StaggerDelay(2));
             Analyze(animate: true);
         };
         Unloaded += (_, _) =>
@@ -63,23 +64,23 @@ public sealed partial class SecurityPage : Page
         _report = SecurityAnalyzer.Analyze(entries);
         var r = _report;
 
-        WeakCount.Text = r.Weak.Count.ToString();
-        ReusedCount.Text = r.Reused.Count.ToString();
-        OldCount.Text = r.Old.Count.ToString();
-        InsecureCount.Text = r.Insecure.Count.ToString();
+        SetCount(WeakCount, r.Weak.Count, animate);
+        SetCount(ReusedCount, r.Reused.Count, animate);
+        SetCount(OldCount, r.Old.Count, animate);
+        SetCount(InsecureCount, r.Insecure.Count, animate);
 
         var (title, description, color) = r.Score switch
         {
             _ when r.Total == 0 => ("Noch nichts zu prüfen",
-                "Sobald du Einträge anlegst, bewertet der Sicherheitscheck deine Passwörter.", Color.FromArgb(255, 124, 92, 255)),
+                "Sobald du Einträge anlegst, bewertet der Sicherheitscheck deine Passwörter.", Color.FromArgb(255, 255, 255, 255)),
             >= 90 => ("Ausgezeichnet",
-                "Deine Passwörter sind stark und einzigartig. So bleibt es sicher.", Color.FromArgb(255, 34, 197, 94)),
+                "Deine Passwörter sind stark und einzigartig. So bleibt es sicher.", Color.FromArgb(255, 74, 222, 128)),
             >= 70 => ("Gut – mit Luft nach oben",
-                "Ein paar Einträge solltest du verbessern. Tippe unten auf einen Hinweis.", Color.FromArgb(255, 132, 204, 22)),
+                "Ein paar Einträge solltest du verbessern. Tippe unten auf einen Hinweis.", Color.FromArgb(255, 255, 255, 255)),
             >= 40 => ("Verbesserungswürdig",
-                "Mehrere schwache oder doppelte Passwörter gefunden. Ersetze sie mit dem Generator.", Color.FromArgb(255, 245, 158, 11)),
+                "Mehrere schwache oder doppelte Passwörter gefunden. Ersetze sie mit dem Generator.", Color.FromArgb(255, 163, 163, 163)),
             _ => ("Kritisch",
-                "Viele Passwörter sind leicht zu knacken oder mehrfach verwendet. Jetzt handeln!", Color.FromArgb(255, 239, 68, 68))
+                "Viele Passwörter sind leicht zu knacken oder mehrfach verwendet. Jetzt handeln!", Color.FromArgb(255, 248, 113, 113))
         };
         ScoreTitle.Text = title;
         ScoreDescription.Text = description;
@@ -88,6 +89,12 @@ public sealed partial class SecurityPage : Page
 
         AnimateScore(r.Score, animate);
         ShowIssues(null);
+    }
+
+    private static void SetCount(TextBlock target, int value, bool animate)
+    {
+        if (animate) Motion.CountUp(target, value);
+        else target.Text = value.ToString();
     }
 
     private void AnimateScore(int target, bool animate)
@@ -166,7 +173,7 @@ public sealed partial class SecurityPage : Page
         bool wasHidden = AllGood.Visibility != Visibility.Visible;
         AllGood.Visibility = none ? Visibility.Visible : Visibility.Collapsed;
         AllGoodText.Text = kind == null ? "Keine Probleme gefunden – weiter so!" : "In dieser Kategorie ist alles in Ordnung.";
-        if (none && wasHidden) Motion.PopIn(AllGoodIcon, 100, 0.3f);
+        if (none && wasHidden) Motion.PopIn(AllGoodIcon, 100);
     }
 
     private void StatCard_Click(object sender, RoutedEventArgs e)

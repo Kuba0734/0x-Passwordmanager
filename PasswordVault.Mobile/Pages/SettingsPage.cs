@@ -38,6 +38,21 @@ public class SettingsPage : ContentPage
             if (form.IsVisible) Ui.AnimateIn(form);
         };
 
+        // Eigene Einstellung zusätzlich zu iOS "Bewegung reduzieren"
+        var motion = new Switch { IsToggled = Ui.ReduceMotionSetting, HorizontalOptions = LayoutOptions.End, VerticalOptions = LayoutOptions.Center };
+        motion.Toggled += (_, e) => Ui.ReduceMotion = e.Value;
+        var motionRow = new Grid { ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto) }, ColumnSpacing = 12 };
+        motionRow.Add(new VerticalStackLayout
+        {
+            Spacing = 2,
+            Children =
+            {
+                new Label { Text = "Animationen reduzieren", FontSize = 16 },
+                new Label { Text = "Schaltet Bewegungen fast komplett ab.", FontSize = 13, TextColor = Ui.Muted }
+            }
+        }, 0, 0);
+        motionRow.Add(motion, 1, 0);
+
         var lockNow = Ui.PrimaryButton("Jetzt sperren");
         lockNow.Clicked += (_, _) => App.ShowUnlock();
 
@@ -67,6 +82,8 @@ public class SettingsPage : ContentPage
                 TextColor = Ui.Muted,
                 FontSize = 14
             }),
+            Section("Darstellung"),
+            Ui.Card(motionRow),
             lockNow,
             new Label
             {
@@ -88,7 +105,7 @@ public class SettingsPage : ContentPage
     {
         Text = text,
         FontSize = 20,
-        FontAttributes = FontAttributes.Bold,
+        FontFamily = Ui.FontBold,
         Margin = new Thickness(4, 12, 0, 0)
     };
 

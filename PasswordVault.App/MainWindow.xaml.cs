@@ -1,4 +1,4 @@
-using Microsoft.UI;
+﻿using Microsoft.UI;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Composition.SystemBackdrops;
 using Microsoft.UI.Dispatching;
@@ -290,7 +290,7 @@ public sealed partial class MainWindow : Window
                 {
                     Width = 56, Height = 56, CornerRadius = new CornerRadius(18),
                     HorizontalAlignment = HorizontalAlignment.Left,
-                    Background = (Brush)Application.Current.Resources["VaultGradientBrush"],
+                    Background = (Brush)Application.Current.Resources["AccentBrush"],
                     Child = new FontIcon { Glyph = "", FontSize = 24, Foreground = new SolidColorBrush(Colors.White) }
                 };
                 panel.Children.Add(icon);
@@ -413,22 +413,15 @@ public sealed partial class MainWindow : Window
 
         var visual = ElementCompositionPreview.GetElementVisual(Toast);
         visual.Opacity = 1;
-        Motion.PopIn(Toast, 0, 0.85f);
-        Motion.FadeInUp(Toast, 0, 24, 380);
+        // Gleitet seitlich herein; die Leiste läuft bis zum Ausblenden ab
+        Motion.FadeInX(Toast, 0, 40);
 
-        if (countdownSeconds > 0)
-        {
-            ToastCountdown.Visibility = Visibility.Visible;
-            Motion.Countdown(ToastCountdown, TimeSpan.FromSeconds(countdownSeconds));
-        }
-        else
-        {
-            ToastCountdown.Visibility = Visibility.Collapsed;
-        }
+        var shown = TimeSpan.FromSeconds(countdownSeconds > 0 ? Math.Min(countdownSeconds, 6) : 2.6);
+        Motion.Countdown(ToastCountdown, countdownSeconds > 0 ? TimeSpan.FromSeconds(countdownSeconds) : shown);
 
         _toastTimer?.Stop();
         _toastTimer = DispatcherQueue.CreateTimer();
-        _toastTimer.Interval = TimeSpan.FromSeconds(countdownSeconds > 0 ? Math.Min(countdownSeconds, 6) : 2.6);
+        _toastTimer.Interval = shown;
         _toastTimer.IsRepeating = false;
         _toastTimer.Tick += (_, _) => HideToast();
         _toastTimer.Start();
@@ -440,11 +433,12 @@ public sealed partial class MainWindow : Window
         var c = visual.Compositor;
         var batch = c.CreateScopedBatch(CompositionBatchTypes.Animation);
 
+        var ease = c.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1f), new Vector2(0.36f, 1f));
         var fade = c.CreateScalarKeyFrameAnimation();
-        fade.InsertKeyFrame(1f, 0f);
-        fade.Duration = TimeSpan.FromMilliseconds(220);
+        fade.InsertKeyFrame(1f, 0f, ease);
+        fade.Duration = TimeSpan.FromMilliseconds(Motion.Normal);
         var slide = c.CreateVector3KeyFrameAnimation();
-        slide.InsertKeyFrame(1f, new Vector3(0, 16, 0));
+        slide.InsertKeyFrame(1f, new Vector3(40, 0, 0), ease);
         slide.Duration = fade.Duration;
 
         ElementCompositionPreview.SetIsTranslationEnabled(Toast, true);
@@ -467,7 +461,7 @@ public sealed partial class MainWindow : Window
         StateDotRipple.Fill = brush;
         StateText.Text = unlocked ? "Entsperrt" : "Gesperrt";
         _tray?.SetTooltip(unlocked ? "Password Vault – entsperrt" : "Password Vault – gesperrt");
-        Motion.Pulse(StateDot, 1.6f);
+        Motion.Pulse(StateDot, 1.4f);
         if (unlocked) Motion.Ripple(StateDotRipple, 2200, 0, 2.6f);
         else ElementCompositionPreview.GetElementVisual(StateDotRipple).StopAnimation("Opacity");
     }
@@ -478,14 +472,10 @@ public sealed partial class MainWindow : Window
         BridgeText.Text = App.Bridge.IsPaired ? "Browser gekoppelt" : "Browser bereit";
     }
 
+    // Das Design ist immer dunkel; die frühere Theme-Einstellung wird ignoriert
     public void ApplyTheme(string theme)
     {
-        RootGrid.RequestedTheme = theme switch
-        {
-            "Light" => ElementTheme.Light,
-            "Dark" => ElementTheme.Dark,
-            _ => ElementTheme.Default
-        };
+        RootGrid.RequestedTheme = ElementTheme.Dark;
         UpdateCaptionButtons();
     }
 

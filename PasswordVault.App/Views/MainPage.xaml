@@ -33,6 +33,12 @@
                         SelectionChanged="NavView_SelectionChanged"
                         ItemInvoked="NavView_ItemInvoked">
 
+            <!-- Inhaltsfläche als dezentes Glas statt Standard-Grau -->
+            <NavigationView.Resources>
+                <SolidColorBrush x:Key="NavigationViewContentBackground" Color="#08FFFFFF" />
+                <SolidColorBrush x:Key="NavigationViewContentGridBorderBrush" Color="#14FFFFFF" />
+            </NavigationView.Resources>
+
             <NavigationView.MenuItems>
                 <NavigationViewItemHeader Content="Tresor" />
 
@@ -92,7 +98,8 @@
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Center"
                                    Visibility="Collapsed"
-                                   Background="{StaticResource WarningBrush}" />
+                                   Background="{StaticResource AccentBrush}"
+                                   Foreground="{StaticResource OnAccentBrush}" />
                     </Grid>
                 </NavigationViewItem>
                 <NavigationViewItem Tag="generator" Content="Passwort-Generator">

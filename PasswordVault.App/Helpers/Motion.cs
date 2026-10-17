@@ -10,6 +10,8 @@ namespace PasswordVault.App.Helpers;
 /// <summary>
 /// Composition-Animationen (laufen auf dem Compositor-Thread, also flüssig
 /// auch wenn der UI-Thread beschäftigt ist) plus Attached Properties für XAML.
+/// Regeln: nur Transform und Opacity, Easing cubic-bezier(0.22, 1, 0.36, 1), 150–300 ms.
+/// Systemeinstellung "Animationen" und die eigene Einstellung schalten fast alles ab.
 /// </summary>
 public static class Motion
 {
@@ -18,8 +20,14 @@ public static class Motion
     public static bool Enabled =>
         (App.Settings?.Current.AnimationsEnabled ?? true) && SystemUi.AnimationsEnabled;
 
+    public const double Fast = 150;
+    public const double Normal = 220;
+    public const double Slow = 300;
+    public const double StaggerStep = 45;
+    private const int MaxStaggered = 10;
+
     private static CompositionEasingFunction EaseOut(Compositor c)
-        => c.CreateCubicBezierEasingFunction(new Vector2(0.16f, 1f), new Vector2(0.3f, 1f));
+        => c.CreateCubicBezierEasingFunction(new Vector2(0.22f, 1f), new Vector2(0.36f, 1f));
 
     private static Visual Prepare(UIElement element)
     {
@@ -31,7 +39,7 @@ public static class Motion
     }
 
     /// <summary>Einblenden mit leichtem Hochgleiten.</summary>
-    public static void FadeInUp(UIElement element, double delayMs = 0, float distance = 18, double durationMs = 520)
+    public static void FadeInUp(UIElement element, double delayMs = 0, float distance = 10, double durationMs = Slow)
     {
         if (!Enabled) return;
         var visual = Prepare(element);
@@ -55,8 +63,8 @@ public static class Motion
         visual.StartAnimation("Translation", slide);
     }
 
-    /// <summary>Einblenden von der Seite.</summary>
-    public static void FadeInX(UIElement element, double delayMs = 0, float distance = 24, double durationMs = 480)
+    /// <summary>Einblenden von der Seite (Toasts).</summary>
+    public static void FadeInX(UIElement element, double delayMs = 0, float distance = 24, double durationMs = Slow)
     {
         if (!Enabled) return;
         var visual = Prepare(element);
@@ -80,29 +88,78 @@ public static class Motion
         visual.StartAnimation("Translation", slide);
     }
 
-    /// <summary>Aufploppen mit Feder-Effekt.</summary>
-    public static void PopIn(UIElement element, double delayMs = 0, float fromScale = 0.6f)
+    /// <summary>Einblenden wie ein Modal: Fade + Scale 0.95 → 1 + leicht nach oben.</summary>
+    public static void PopIn(UIElement element, double delayMs = 0, float fromScale = 0.95f)
     {
         if (!Enabled) return;
         var visual = Prepare(element);
         var c = visual.Compositor;
 
-        var scale = c.CreateSpringVector3Animation();
-        scale.InitialValue = new Vector3(fromScale, fromScale, 1);
-        scale.FinalValue = Vector3.One;
-        scale.DampingRatio = 0.55f;
-        scale.Period = TimeSpan.FromMilliseconds(55);
+        var scale = c.CreateVector3KeyFrameAnimation();
+        scale.InsertKeyFrame(0f, new Vector3(fromScale, fromScale, 1));
+        scale.InsertKeyFrame(1f, Vector3.One, EaseOut(c));
+        scale.Duration = TimeSpan.FromMilliseconds(Normal);
         scale.DelayTime = TimeSpan.FromMilliseconds(delayMs);
         scale.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
 
+        var slide = c.CreateVector3KeyFrameAnimation();
+        slide.InsertKeyFrame(0f, new Vector3(0, 8, 0));
+        slide.InsertKeyFrame(1f, Vector3.Zero, EaseOut(c));
+        slide.Duration = scale.Duration;
+        slide.DelayTime = scale.DelayTime;
+        slide.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
+
         var fade = c.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(0f, 0f);
-        fade.InsertKeyFrame(1f, 1f);
-        fade.Duration = TimeSpan.FromMilliseconds(220);
+        fade.InsertKeyFrame(1f, 1f, EaseOut(c));
+        fade.Duration = scale.Duration;
         fade.DelayTime = scale.DelayTime;
         fade.DelayBehavior = AnimationDelayBehavior.SetInitialValueBeforeDelay;
 
         visual.StartAnimation("Scale", scale);
+        visual.StartAnimation("Translation", slide);
+        visual.StartAnimation("Opacity", fade);
+    }
+
+    /// <summary>Ausblenden wie ein Modal (umgekehrt zu PopIn); <paramref name="done"/> läuft danach.</summary>
+    public static void PopOut(UIElement element, Action done)
+    {
+        if (!Enabled)
+        {
+            done();
+            return;
+        }
+        var visual = Prepare(element);
+        var c = visual.Compositor;
+        var batch = c.CreateScopedBatch(CompositionBatchTypes.Animation);
+
+        var scale = c.CreateVector3KeyFrameAnimation();
+        scale.InsertKeyFrame(1f, new Vector3(0.95f, 0.95f, 1), EaseOut(c));
+        scale.Duration = TimeSpan.FromMilliseconds(Fast);
+        var slide = c.CreateVector3KeyFrameAnimation();
+        slide.InsertKeyFrame(1f, new Vector3(0, 8, 0), EaseOut(c));
+        slide.Duration = scale.Duration;
+        var fade = c.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(1f, 0f, EaseOut(c));
+        fade.Duration = scale.Duration;
+
+        visual.StartAnimation("Scale", scale);
+        visual.StartAnimation("Translation", slide);
+        visual.StartAnimation("Opacity", fade);
+        batch.End();
+        batch.Completed += (_, _) => done();
+    }
+
+    /// <summary>Überblenden beim Seiten- oder Tabwechsel (nur Opacity).</summary>
+    public static void Crossfade(UIElement element, double durationMs = Normal)
+    {
+        if (!Enabled) return;
+        var visual = ElementCompositionPreview.GetElementVisual(element);
+        var c = visual.Compositor;
+        var fade = c.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(0f, 0f);
+        fade.InsertKeyFrame(1f, 1f, EaseOut(c));
+        fade.Duration = TimeSpan.FromMilliseconds(durationMs);
         visual.StartAnimation("Opacity", fade);
     }
 
@@ -114,9 +171,9 @@ public static class Motion
         var c = visual.Compositor;
         var anim = c.CreateVector3KeyFrameAnimation();
         anim.InsertKeyFrame(0f, Vector3.One);
-        anim.InsertKeyFrame(0.35f, new Vector3(peak, peak, 1), EaseOut(c));
+        anim.InsertKeyFrame(0.4f, new Vector3(peak, peak, 1), EaseOut(c));
         anim.InsertKeyFrame(1f, Vector3.One, EaseOut(c));
-        anim.Duration = TimeSpan.FromMilliseconds(420);
+        anim.Duration = TimeSpan.FromMilliseconds(Slow);
         visual.StartAnimation("Scale", anim);
     }
 
@@ -127,15 +184,15 @@ public static class Motion
         var visual = Prepare(element);
         var c = visual.Compositor;
         var anim = c.CreateVector3KeyFrameAnimation();
-        float[] offsets = { 0, -14, 12, -10, 8, -5, 3, 0 };
+        float[] offsets = { 0, -8, 7, -5, 3, 0 };
         for (int i = 0; i < offsets.Length; i++)
             anim.InsertKeyFrame(i / (float)(offsets.Length - 1), new Vector3(offsets[i], 0, 0));
-        anim.Duration = TimeSpan.FromMilliseconds(480);
+        anim.Duration = TimeSpan.FromMilliseconds(Slow);
         visual.StartAnimation("Translation", anim);
     }
 
     /// <summary>Eine volle Umdrehung (z.B. "Neu generieren"-Icon).</summary>
-    public static void Spin(UIElement element, double durationMs = 600)
+    public static void Spin(UIElement element, double durationMs = Slow)
     {
         if (!Enabled) return;
         var visual = Prepare(element);
@@ -148,7 +205,7 @@ public static class Motion
     }
 
     /// <summary>Animiert die horizontale Skalierung (z.B. Stärke-Balken) von links aus.</summary>
-    public static void ScaleXTo(UIElement element, float to, double durationMs = 600)
+    public static void ScaleXTo(UIElement element, float to, double durationMs = Slow)
     {
         var visual = ElementCompositionPreview.GetElementVisual(element);
         visual.CenterPoint = Vector3.Zero;
@@ -225,16 +282,40 @@ public static class Motion
         visual.StartAnimation("Opacity", fade);
     }
 
-    /// <summary>Kinder eines Panels nacheinander einblenden.</summary>
-    public static void Stagger(Panel panel, double stepMs = 45, double initialDelayMs = 0)
+    /// <summary>Kinder eines Panels nacheinander einblenden (höchstens ~10 gestaffelt, der Rest gemeinsam).</summary>
+    public static void Stagger(Panel panel, double stepMs = StaggerStep, double initialDelayMs = 0)
     {
-        double delay = initialDelayMs;
+        int index = 0;
         foreach (var child in panel.Children)
         {
             if (child.Visibility != Visibility.Visible) continue;
-            FadeInUp(child, delay);
-            delay += stepMs;
+            FadeInUp(child, initialDelayMs + Math.Min(index++, MaxStaggered) * stepMs);
         }
+    }
+
+    /// <summary>Verzögerung für das n-te Listenelement (40–60 ms Abstand, ab ~10 nicht weiter).</summary>
+    public static double StaggerDelay(int index) => Math.Min(index, MaxStaggered) * StaggerStep;
+
+    /// <summary>Zahl animiert hochzählen (Kennzahlen); ohne Animationen sofort der Endwert.</summary>
+    public static void CountUp(Microsoft.UI.Xaml.Controls.TextBlock target, int to, double durationMs = 700)
+    {
+        if (!Enabled || to <= 0)
+        {
+            target.Text = to.ToString();
+            return;
+        }
+        var started = DateTime.UtcNow;
+        var timer = target.DispatcherQueue.CreateTimer();
+        timer.Interval = TimeSpan.FromMilliseconds(16);
+        timer.Tick += (t, _) =>
+        {
+            var p = Math.Min(1, (DateTime.UtcNow - started).TotalMilliseconds / durationMs);
+            var eased = 1 - Math.Pow(1 - p, 3);
+            target.Text = ((int)Math.Round(to * eased)).ToString();
+            if (p >= 1) t.Stop();
+        };
+        target.Text = "0";
+        timer.Start();
     }
 
     // ===== Attached Property: HoverLift (Karte hebt sich bei Hover leicht an) =====
@@ -249,9 +330,11 @@ public static class Motion
     private static void OnHoverLiftChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is not UIElement element || e.NewValue is not true) return;
-        element.PointerEntered += (_, _) => Lift(element, -3, 1.015f);
+        element.PointerEntered += (_, _) => Lift(element, -2, 1f);
         element.PointerExited += (_, _) => Lift(element, 0, 1f);
         element.PointerCanceled += (_, _) => Lift(element, 0, 1f);
+        element.PointerPressed += (_, _) => Lift(element, 0, 0.97f);
+        element.PointerReleased += (_, _) => Lift(element, -2, 1f);
     }
 
     private static void Lift(UIElement element, float y, float scale)
@@ -260,16 +343,14 @@ public static class Motion
         var visual = Prepare(element);
         var c = visual.Compositor;
 
-        var t = c.CreateSpringVector3Animation();
-        t.FinalValue = new Vector3(0, y, 0);
-        t.DampingRatio = 0.7f;
-        t.Period = TimeSpan.FromMilliseconds(40);
+        var t = c.CreateVector3KeyFrameAnimation();
+        t.InsertKeyFrame(1f, new Vector3(0, y, 0), EaseOut(c));
+        t.Duration = TimeSpan.FromMilliseconds(Normal);
         visual.StartAnimation("Translation", t);
 
-        var s = c.CreateSpringVector3Animation();
-        s.FinalValue = new Vector3(scale, scale, 1);
-        s.DampingRatio = 0.7f;
-        s.Period = TimeSpan.FromMilliseconds(40);
+        var s = c.CreateVector3KeyFrameAnimation();
+        s.InsertKeyFrame(1f, new Vector3(scale, scale, 1), EaseOut(c));
+        s.Duration = TimeSpan.FromMilliseconds(Fast);
         visual.StartAnimation("Scale", s);
     }
 
@@ -307,11 +388,11 @@ public static class Motion
         var c = visual.Compositor;
         var fade = c.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(1f, show ? 1f : 0f, EaseOut(c));
-        fade.Duration = TimeSpan.FromMilliseconds(200);
+        fade.Duration = TimeSpan.FromMilliseconds(Fast);
         visual.StartAnimation("Opacity", fade);
 
         var slide = c.CreateVector3KeyFrameAnimation();
-        slide.InsertKeyFrame(1f, new Vector3(show ? 0 : 10, 0, 0), EaseOut(c));
+        slide.InsertKeyFrame(1f, new Vector3(show ? 0 : 6, 0, 0), EaseOut(c));
         slide.Duration = fade.Duration;
         visual.StartAnimation("Translation", slide);
     }

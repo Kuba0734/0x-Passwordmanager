@@ -26,7 +26,7 @@ public sealed partial class SettingsPage : Page
         {
             App.Bridge.StatusChanged += Bridge_StatusChanged;
             App.MainWindowInstance.AutostartChanged += OnAutostartChanged;
-            Motion.Stagger(Root, 25);
+            Motion.Stagger(Root);
             await App.MainWindowInstance.RefreshAutostartAsync();
             ShowAutostart(App.MainWindowInstance.AutostartState);
             await LoadWindowsHelloAsync();
@@ -79,7 +79,6 @@ public sealed partial class SettingsPage : Page
         var s = App.Settings.Current;
         SelectByTag(AutoLockCombo, s.AutoLockSeconds.ToString());
         SelectByTag(ClipboardCombo, s.ClipboardClearSeconds.ToString());
-        SelectByTag(ThemeCombo, s.Theme);
         AnimationsToggle.IsOn = s.AnimationsEnabled;
         BridgeToggle.IsOn = s.BrowserBridgeEnabled;
         MinimizeToTrayToggle.IsOn = s.MinimizeToTray;
@@ -400,14 +399,6 @@ public sealed partial class SettingsPage : Page
     }
 
     // ================= Darstellung =================
-
-    private void Theme_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (_loading || ThemeCombo.SelectedItem is not ComboBoxItem item) return;
-        App.Settings.Current.Theme = (string)item.Tag;
-        App.Settings.Save();
-        App.MainWindowInstance.ApplyTheme(App.Settings.Current.Theme);
-    }
 
     private void Animations_Toggled(object sender, RoutedEventArgs e)
     {

@@ -16,7 +16,7 @@ public class EntryPage : ContentPage
         _id = id;
         ToolbarItems.Add(new ToolbarItem("Bearbeiten", null, async () =>
         {
-            if (_entry != null) await Navigation.PushAsync(new EditEntryPage(_entry));
+            if (_entry != null) await Ui.Push(Navigation, new EditEntryPage(_entry));
         }));
     }
 
@@ -47,8 +47,8 @@ public class EntryPage : ContentPage
             Children =
             {
                 Ui.Avatar(e.Title, 76),
-                new Label { Text = e.Title, FontSize = 26, FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center },
-                new Label { Text = (e.IsFavorite ? "★ " : "") + e.Category, TextColor = Ui.Muted, FontSize = 14, HorizontalTextAlignment = TextAlignment.Center }
+                new Label { Text = e.Title, FontSize = 26, FontFamily = Ui.FontBold, HorizontalTextAlignment = TextAlignment.Center },
+                new Label { Text = (e.IsFavorite ? "Favorit · " : "") + e.Category, TextColor = Ui.Muted, FontSize = 14, HorizontalTextAlignment = TextAlignment.Center }
             }
         };
         ((View)header.Children[0]).HorizontalOptions = LayoutOptions.Center;
@@ -56,21 +56,21 @@ public class EntryPage : ContentPage
 
         if (!string.IsNullOrEmpty(e.Username))
             views.Add(Ui.Field("Benutzername", Value(e.Username),
-                Ui.IconButton("⧉", "Benutzername kopieren", (_, _) => Copy(e.Username, "Benutzername kopiert"))));
+                Ui.IconButton(Ui.Icons.Copy, "Benutzername kopieren", (_, _) => Copy(e.Username, "Benutzername kopiert"))));
 
         if (!string.IsNullOrEmpty(e.Password))
         {
             var pw = Value(Mask(e.Password));
             pw.FontFamily = "Menlo";
-            var toggle = Ui.IconButton("👁", "Passwort anzeigen", (_, _) => { });
-            toggle.Clicked += (_, _) =>
+            Border? toggle = null;
+            toggle = Ui.IconButton(Ui.Icons.Eye, "Passwort anzeigen", (_, _) =>
             {
                 _showPassword = !_showPassword;
                 pw.Text = _showPassword ? e.Password : Mask(e.Password);
-                toggle.Text = _showPassword ? "🙈" : "👁";
-            };
+                Ui.SetIcon(toggle!, _showPassword ? Ui.Icons.EyeOff : Ui.Icons.Eye);
+            });
             views.Add(Ui.Field("Passwort", pw, toggle,
-                Ui.IconButton("⧉", "Passwort kopieren", (_, _) => Copy(e.Password, "Passwort kopiert – wird in 30 s gelöscht"))));
+                Ui.IconButton(Ui.Icons.Copy, "Passwort kopieren", (_, _) => Copy(e.Password, "Passwort kopiert – wird in 30 s gelöscht"))));
 
             var (meter, update) = Ui.StrengthMeter();
             update(e.Password);
@@ -79,8 +79,8 @@ public class EntryPage : ContentPage
 
         if (!string.IsNullOrEmpty(e.Url))
             views.Add(Ui.Field("Website", Value(e.Url),
-                Ui.IconButton("↗", "Website öffnen", async (_, _) => await OpenUrl(e.Url)),
-                Ui.IconButton("⧉", "Website kopieren", (_, _) => Copy(e.Url, "Adresse kopiert"))));
+                Ui.IconButton(Ui.Icons.External, "Website öffnen", async (_, _) => await OpenUrl(e.Url)),
+                Ui.IconButton(Ui.Icons.Copy, "Website kopieren", (_, _) => Copy(e.Url, "Adresse kopiert"))));
 
         if (!string.IsNullOrEmpty(e.Notes))
             views.Add(Ui.Field("Notizen", Value(e.Notes, wrap: true)));

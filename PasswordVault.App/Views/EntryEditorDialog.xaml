@@ -170,7 +170,7 @@
                 Visibility="Collapsed"
                 CornerRadius="10"
                 Padding="12,8"
-                Background="#26EF4444">
+                Background="{StaticResource DangerSurfaceBrush}">
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <FontIcon Glyph="&#xE783;" FontSize="14" Foreground="{StaticResource DangerBrush}" />
                 <TextBlock x:Name="ValidationText" TextWrapping="Wrap" />

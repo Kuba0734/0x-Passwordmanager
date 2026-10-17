@@ -61,8 +61,8 @@ public sealed partial class VaultPage : Page
         ApplyLayout();
 
         Motion.FadeInUp(Header, 0);
-        Motion.FadeInUp(Toolbar, 70);
-        if (!_narrow) Motion.FadeInX(DetailCard, 140, 40);
+        Motion.FadeInUp(Toolbar, Motion.StaggerDelay(1));
+        if (!_narrow) Motion.FadeInUp(DetailCard, Motion.StaggerDelay(2));
 
         if (_startNewOnLoad)
         {
@@ -109,8 +109,8 @@ public sealed partial class VaultPage : Page
         HeaderIcon.Glyph = glyph;
         if (animate)
         {
-            Motion.PopIn(HeaderIcon, 0, 0.3f);
-            Motion.FadeInX(PageTitle, 0, 16, 350);
+            Motion.PopIn(HeaderIcon);
+            Motion.Crossfade(PageTitle);
         }
     }
 
@@ -245,10 +245,10 @@ public sealed partial class VaultPage : Page
 
         if (!wasVisible)
         {
-            Motion.PopIn(EmptyIllustration, 0, 0.5f);
-            Motion.FadeInUp(EmptyTitle, 80);
-            Motion.FadeInUp(EmptyText, 140);
-            Motion.FadeInUp(EmptyAddButton, 200);
+            Motion.PopIn(EmptyIllustration);
+            Motion.FadeInUp(EmptyTitle, Motion.StaggerDelay(1));
+            Motion.FadeInUp(EmptyText, Motion.StaggerDelay(2));
+            Motion.FadeInUp(EmptyAddButton, Motion.StaggerDelay(3));
         }
     }
 
@@ -301,7 +301,7 @@ public sealed partial class VaultPage : Page
         StrengthLabel.Text = $"Passwortstärke: {strength.Label}";
         StrengthDetail.Text = $"≈ {strength.EntropyBits:0} Bit · {entry.Password.Length} Zeichen";
         StrengthFill.Background = Ui.StrengthBrush(strength.Level);
-        Motion.ScaleXTo(StrengthFill, Math.Max(strength.Score, 3) / 100f, animate ? 800 : 300);
+        Motion.ScaleXTo(StrengthFill, Math.Max(strength.Score, 3) / 100f, animate ? Motion.Slow : Motion.Fast);
 
         UrlField.Visibility = Ui.VisibleIf(entry.Url);
         DetailUrl.Text = entry.Url;
@@ -318,8 +318,8 @@ public sealed partial class VaultPage : Page
         if (animate)
         {
             DetailScroller.ChangeView(null, 0, null, true);
-            Motion.Stagger(DetailPanel, 35);
-            Motion.PopIn(DetailAvatar, 40, 0.5f);
+            Motion.Stagger(DetailPanel);
+            Motion.PopIn(DetailAvatar, 40);
         }
     }
 
@@ -371,7 +371,7 @@ public sealed partial class VaultPage : Page
         if (open)
         {
             EmptyState.Visibility = Visibility.Collapsed;
-            Motion.FadeInX(DetailCard, 0, 40, 350);
+            Motion.Crossfade(DetailCard);
         }
         else
         {
@@ -490,7 +490,7 @@ public sealed partial class VaultPage : Page
         updated.IsFavorite = !updated.IsFavorite;
         App.Store.Update(updated);
         _pendingSelectId = updated.Id;
-        Motion.Pulse(FavoriteButton, 1.4f);
+        Motion.Pulse(FavoriteButton, 1.15f);
     }
 
     private void Reveal_Click(object sender, RoutedEventArgs e)
@@ -507,7 +507,7 @@ public sealed partial class VaultPage : Page
             SetPasswordMasked();
             RevealIcon.Glyph = "";
         }
-        Motion.FadeInX(DetailPassword, 0, 10, 260);
+        Motion.Crossfade(DetailPassword, Motion.Fast);
     }
 
     private void CopyUser_Click(object sender, RoutedEventArgs e)

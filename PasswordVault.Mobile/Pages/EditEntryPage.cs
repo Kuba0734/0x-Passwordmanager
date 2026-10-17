@@ -42,13 +42,13 @@ public class EditEntryPage : ContentPage
         updateMeter(_entry.Password);
         _password.TextChanged += (_, e) => updateMeter(e.NewTextValue ?? "");
 
-        var show = Ui.IconButton("👁", "Passwort anzeigen", (_, _) => { });
-        show.Clicked += (_, _) =>
+        Border? show = null;
+        show = Ui.IconButton(Ui.Icons.Eye, "Passwort anzeigen", (_, _) =>
         {
             _password.IsPassword = !_password.IsPassword;
-            show.Text = _password.IsPassword ? "👁" : "🙈";
-        };
-        var generate = Ui.IconButton("🎲", "Passwort erzeugen", async (_, _) => await GenerateAsync());
+            Ui.SetIcon(show!, _password.IsPassword ? Ui.Icons.Eye : Ui.Icons.EyeOff);
+        });
+        var generate = Ui.IconButton(Ui.Icons.Refresh, "Passwort erzeugen", async (_, _) => await GenerateAsync());
 
         var lengthLabel = new Label { Text = "Länge 20", FontSize = 14, TextColor = Ui.Muted, VerticalOptions = LayoutOptions.Center };
         _length.ValueChanged += (_, e) => lengthLabel.Text = $"Länge {(int)e.NewValue}";
@@ -127,8 +127,8 @@ public class EditEntryPage : ContentPage
         _password.Text = new PasswordGenerator().Generate((int)_length.Value, useSymbols: _symbols.IsToggled);
         _password.IsPassword = false;
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
-        await _password.ScaleToAsync(1.04, 90);
-        await _password.ScaleToAsync(1, 140, Easing.SpringOut);
+        await _password.ScaleToAsync(1.02, Ui.Fast, Ui.Ease);
+        await _password.ScaleToAsync(1, Ui.Normal, Ui.Ease);
     }
 
     private async void Save()

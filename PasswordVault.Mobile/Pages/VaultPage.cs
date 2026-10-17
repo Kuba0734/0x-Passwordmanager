@@ -9,14 +9,15 @@ namespace PasswordVault.Mobile.Pages;
 public class VaultPage : ContentPage
 {
     private const string All = "Alle";
-    private const string Favorites = "★ Favoriten";
+    private const string Favorites = "Favoriten";
 
     private readonly SearchBar _search = new()
     {
         Placeholder = "Suchen",
         TextColor = Ui.Text,
         PlaceholderColor = Ui.Muted,
-        CancelButtonColor = Ui.Violet,
+        CancelButtonColor = Ui.Accent,
+        FontFamily = Ui.Font,
         BackgroundColor = Colors.Transparent
     };
     private readonly HorizontalStackLayout _chips = new() { Spacing = 8, Padding = new Thickness(16, 0) };
@@ -29,7 +30,7 @@ public class VaultPage : ContentPage
     {
         Title = "Tresor";
         ToolbarItems.Add(new ToolbarItem("Sperren", null, App.ShowUnlock));
-        ToolbarItems.Add(new ToolbarItem("Einstellungen", null, async () => await Navigation.PushAsync(new SettingsPage())));
+        ToolbarItems.Add(new ToolbarItem("Einstellungen", null, async () => await Ui.Push(Navigation, new SettingsPage())));
 
         foreach (var name in new[] { All, Favorites }.Concat(Categories.All))
             _chips.Add(CreateChip(name));
@@ -43,34 +44,34 @@ public class VaultPage : ContentPage
             Spacing = 8,
             Children =
             {
-                new Label { Text = "🗝️", FontSize = 48, HorizontalTextAlignment = TextAlignment.Center },
-                new Label { Text = "Keine Einträge", FontSize = 18, FontAttributes = FontAttributes.Bold, HorizontalTextAlignment = TextAlignment.Center },
+                Ui.Icon(Ui.Icons.Key, 44, Ui.Muted),
+                new Label { Text = "Keine Einträge", FontSize = 18, FontFamily = Ui.FontBold, HorizontalTextAlignment = TextAlignment.Center },
                 new Label { Text = "Tippe auf + um ein Passwort hinzuzufügen.", TextColor = Ui.Muted, HorizontalTextAlignment = TextAlignment.Center }
             }
         };
 
-        var add = new Button
+        var add = new Border
         {
-            Text = "+",
-            FontSize = 32,
-            Padding = 0,
-            TextColor = Colors.White,
-            Background = Ui.AccentGradient,
-            CornerRadius = 32,
+            BackgroundColor = Ui.Accent,
+            StrokeThickness = 0,
+            StrokeShape = new RoundRectangle { CornerRadius = 32 },
             WidthRequest = 64,
             HeightRequest = 64,
             HorizontalOptions = LayoutOptions.End,
             VerticalOptions = LayoutOptions.End,
             Margin = new Thickness(0, 0, 22, 30),
-            Shadow = new Shadow { Brush = new SolidColorBrush(Ui.Violet), Radius = 24, Opacity = 0.6f, Offset = new Point(0, 8) }
+            Shadow = new Shadow { Brush = new SolidColorBrush(Colors.Black), Radius = 24, Opacity = 0.6f, Offset = new Point(0, 8) },
+            Content = Ui.Icon(Ui.Icons.Plus, 28, Ui.OnAccent)
         };
         SemanticProperties.SetDescription(add, "Neuer Eintrag");
-        add.Clicked += async (_, _) =>
+        var addTap = new TapGestureRecognizer();
+        addTap.Tapped += async (_, _) =>
         {
-            await add.ScaleToAsync(0.88, 70);
-            await add.ScaleToAsync(1, 120, Easing.SpringOut);
-            await Navigation.PushAsync(new EditEntryPage(null));
+            await add.ScaleToAsync(0.97, Ui.Fast, Ui.Ease);
+            await add.ScaleToAsync(1, Ui.Normal, Ui.Ease);
+            await Ui.Push(Navigation, new EditEntryPage(null));
         };
+        add.GestureRecognizers.Add(addTap);
 
         var layout = new Grid
         {
@@ -116,7 +117,7 @@ public class VaultPage : ContentPage
 
     private Button CreateChip(string name)
     {
-        var chip = new Button { Text = name, FontSize = 14, CornerRadius = 16, HeightRequest = 34, Padding = new Thickness(14, 0) };
+        var chip = Ui.Pressable(new Button { Text = name, FontSize = 14, CornerRadius = 17, HeightRequest = 34, Padding = new Thickness(14, 0), BorderWidth = 1 });
         chip.Clicked += (_, _) =>
         {
             _filter = name;
@@ -131,12 +132,15 @@ public class VaultPage : ContentPage
         foreach (var chip in _chips.Children.OfType<Button>())
         {
             var active = chip.Text == _filter;
-            chip.Background = active ? Ui.AccentGradient : new SolidColorBrush(Ui.Surface2);
-            chip.TextColor = active ? Colors.White : Ui.Muted;
+            chip.BackgroundColor = active ? Ui.Accent : Ui.Surface;
+            chip.BorderColor = active ? Ui.Accent : Ui.Stroke;
+            chip.TextColor = active ? Ui.OnAccent : Ui.Muted;
         }
     }
 
-    internal async Task OpenAsync(PasswordEntry entry) => await Navigation.PushAsync(new EntryPage(entry.Id));
+    internal async Task OpenAsync(PasswordEntry entry) => await Ui.Push(Navigation, new EntryPage(entry.Id));
+
+    internal int IndexOf(PasswordEntry entry) => (_list.ItemsSource as List<PasswordEntry>)?.IndexOf(entry) ?? 0;
 
     internal void CopyPassword(PasswordEntry entry)
     {
@@ -162,7 +166,7 @@ public class VaultPage : ContentPage
                 VerticalOptions = LayoutOptions.Center,
                 Children =
                 {
-                    new Label { Text = entry.Title, FontSize = 17, FontAttributes = FontAttributes.Bold, LineBreakMode = LineBreakMode.TailTruncation },
+                    new Label { Text = entry.Title, FontSize = 17, FontFamily = Ui.FontBold, LineBreakMode = LineBreakMode.TailTruncation },
                     new Label { Text = string.IsNullOrEmpty(entry.Username) ? entry.Category : entry.Username, FontSize = 14, TextColor = Ui.Muted, LineBreakMode = LineBreakMode.TailTruncation }
                 }
             };
@@ -174,15 +178,15 @@ public class VaultPage : ContentPage
             row.Add(Ui.Avatar(entry.Title), 0, 0);
             row.Add(text, 1, 0);
             if (entry.IsFavorite)
-                row.Add(new Label { Text = "★", TextColor = Color.FromArgb("#F59E0B"), FontSize = 18, VerticalOptions = LayoutOptions.Center }, 2, 0);
+                row.Add(Ui.Icon(Ui.Icons.Star, 16, Ui.Muted, filled: true), 2, 0);
 
             var card = Ui.Card(row, new Thickness(12));
             card.GestureRecognizers.Add(new TapGestureRecognizer
             {
                 Command = new Command(async () =>
                 {
-                    await card.ScaleToAsync(0.97, 60);
-                    await card.ScaleToAsync(1, 90);
+                    await card.ScaleToAsync(0.97, Ui.Fast, Ui.Ease);
+                    await card.ScaleToAsync(1, Ui.Normal, Ui.Ease);
                     await _page.OpenAsync(entry);
                 })
             });
@@ -191,7 +195,7 @@ public class VaultPage : ContentPage
             {
                 Content = new Border
                 {
-                    BackgroundColor = Ui.Indigo,
+                    BackgroundColor = Ui.SurfaceStrong,
                     StrokeThickness = 0,
                     StrokeShape = new RoundRectangle { CornerRadius = 18 },
                     WidthRequest = 110,
@@ -209,8 +213,8 @@ public class VaultPage : ContentPage
             };
             SemanticProperties.SetDescription(card, $"{entry.Title}, {entry.Username}");
 
-            Opacity = 0;
-            _ = this.FadeToAsync(1, 250);
+            // gestaffelt: 45 ms pro Zeile, ab der 10. gemeinsam
+            if (!Ui.ReduceMotion) _ = Ui.FadeUp(this, (uint)(Math.Min(_page.IndexOf(entry), 10) * Ui.StaggerStep));
         }
     }
 }

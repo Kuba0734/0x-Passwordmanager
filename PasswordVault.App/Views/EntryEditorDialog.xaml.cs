@@ -54,8 +54,8 @@ public sealed partial class EntryEditorDialog : ContentDialog
         PrimaryButtonClick += OnPrimaryButtonClick;
         Opened += (_, _) =>
         {
-            Motion.Stagger(Form, 35);
-            Motion.PopIn(Avatar, 60, 0.5f);
+            Motion.Stagger(Form);
+            Motion.PopIn(Avatar, 60);
             TitleBox.Focus(FocusState.Programmatic);
             // Neuer Login ohne Passwort → direkt einen Vorschlag machen
             if (isNew && string.IsNullOrEmpty(PasswordInput.Password) && _category != Categories.Notes)
@@ -99,7 +99,7 @@ public sealed partial class EntryEditorDialog : ContentDialog
         if (ValidationPanel.Visibility != Visibility.Visible)
         {
             ValidationPanel.Visibility = Visibility.Visible;
-            Motion.FadeInUp(ValidationPanel, 0, 8, 260);
+            Motion.FadeInUp(ValidationPanel, 0, 8);
         }
     }
 
@@ -108,7 +108,7 @@ public sealed partial class EntryEditorDialog : ContentDialog
         var oldInitial = AvatarInitial.Text;
         UpdateAvatar();
         if (!_initializing && oldInitial != AvatarInitial.Text)
-            Motion.Pulse(Avatar, 1.12f);
+            Motion.Pulse(Avatar, 1.06f);
         if (ValidationPanel.Visibility == Visibility.Visible && TitleBox.Text.Length > 0)
             ValidationPanel.Visibility = Visibility.Collapsed;
     }
@@ -144,7 +144,7 @@ public sealed partial class EntryEditorDialog : ContentDialog
         StrengthLabel.Text = result.Level == StrengthLevel.None
             ? "Kein Passwort"
             : $"{result.Label} · {result.EntropyBits:0} Bit";
-        Motion.ScaleXTo(StrengthFill, Math.Max(result.Score, 2) / 100f, 500);
+        Motion.ScaleXTo(StrengthFill, Math.Max(result.Score, 2) / 100f);
     }
 
     private void Generate_Click(object sender, RoutedEventArgs e) => Generate();
@@ -164,7 +164,7 @@ public sealed partial class EntryEditorDialog : ContentDialog
         PasswordInput.PasswordRevealMode = PasswordRevealMode.Visible;
         // PasswordChanged feuert beim programmatischen Setzen nicht zuverlässig
         UpdateStrength();
-        Motion.Spin(GenerateIcon, 500);
+        Motion.Spin(GenerateIcon);
         Motion.Pulse(PasswordInput, 1.02f);
     }
 

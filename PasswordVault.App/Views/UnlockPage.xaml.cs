@@ -41,15 +41,13 @@ public sealed partial class UnlockPage : Page
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
         // Hintergrund
-        Motion.Float(BlobA, new Vector3(90, 60, 0), 14000);
-        Motion.Float(BlobB, new Vector3(-110, -70, 0), 17000, 800);
-        Motion.Float(BlobC, new Vector3(-60, 90, 0), 12000, 400);
-        Motion.Float(BlobD, new Vector3(70, -50, 0), 15000, 1200);
+        Motion.Float(BlobA, new Vector3(90, 60, 0), 18000);
+        Motion.Float(BlobB, new Vector3(-110, -70, 0), 22000, 800);
 
-        // Karte + Inhalt gestaffelt
-        Motion.FadeInUp(Card, 0, 40, 700);
-        Motion.Stagger(Form, 60, 150);
-        Motion.PopIn(LogoTile, 120, 0.4f);
+        // Karte wie ein Modal, Inhalt gestaffelt
+        Motion.PopIn(Card);
+        Motion.Stagger(Form, Motion.StaggerStep, 100);
+        Motion.PopIn(LogoTile, 120);
         Motion.Ripple(Ring1, 2600, 600);
         Motion.Ripple(Ring2, 2600, 1900);
 
@@ -79,7 +77,7 @@ public sealed partial class UnlockPage : Page
         var result = PasswordStrength.Evaluate(MasterPasswordBox.Password);
         StrengthFill.Background = Ui.StrengthBrush(result.Level);
         StrengthLabel.Text = result.Level == StrengthLevel.None ? "—" : result.Label;
-        Motion.ScaleXTo(StrengthFill, Math.Max(result.Score, 2) / 100f, 450);
+        Motion.ScaleXTo(StrengthFill, Math.Max(result.Score, 2) / 100f);
     }
 
     private async void UnlockButton_Click(object sender, RoutedEventArgs e)
@@ -179,14 +177,14 @@ public sealed partial class UnlockPage : Page
     private async Task PlaySuccessAsync()
     {
         LockIcon.Glyph = ""; // offenes Schloss
-        Motion.Pulse(LogoTile, 1.18f);
+        Motion.Pulse(LogoTile, 1.08f);
         BusyRing.IsActive = false;
         BusyRing.Visibility = Visibility.Collapsed;
         UnlockButtonContent.Visibility = Visibility.Visible;
         UnlockButtonText.Text = _createMode ? "Tresor erstellt" : "Entsperrt";
         UnlockArrow.Glyph = "";
-        Motion.PopIn(UnlockArrow, 0, 0.3f);
-        if (Motion.Enabled) await Task.Delay(420);
+        Motion.PopIn(UnlockArrow);
+        if (Motion.Enabled) await Task.Delay((int)Motion.Slow);
     }
 
     private void SetBusy(bool busy)
@@ -205,7 +203,7 @@ public sealed partial class UnlockPage : Page
         ErrorText.Text = message;
         bool wasVisible = ErrorPanel.Visibility == Visibility.Visible;
         ErrorPanel.Visibility = Visibility.Visible;
-        if (!wasVisible) Motion.FadeInUp(ErrorPanel, 0, -8, 300);
+        if (!wasVisible) Motion.FadeInUp(ErrorPanel, 0, -6);
         Motion.Shake(Card);
         Motion.Shake(LogoTile);
     }

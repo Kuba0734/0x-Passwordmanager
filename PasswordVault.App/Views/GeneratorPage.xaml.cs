@@ -1,4 +1,4 @@
-using Microsoft.UI.Dispatching;
+﻿using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using PasswordVault.App.Helpers;
@@ -47,9 +47,9 @@ public sealed partial class GeneratorPage : Page
         _initializing = false;
         Loaded += (_, _) =>
         {
-            Motion.Stagger(Root, 70);
-            Motion.FadeInUp(OptionsCard, 200);
-            Motion.FadeInUp(HistoryCard, 280);
+            Motion.Stagger(Root);
+            Motion.FadeInUp(OptionsCard, Motion.StaggerDelay(1));
+            Motion.FadeInUp(HistoryCard, Motion.StaggerDelay(2));
             Generate();
         };
     }
@@ -70,7 +70,7 @@ public sealed partial class GeneratorPage : Page
         StrengthLabel.Text = strength.Label;
         EntropyLabel.Text = $"≈ {strength.EntropyBits:0} Bit · Knackzeit: {PasswordStrength.EstimateCrackTime(strength.EntropyBits)}";
         StrengthFill.Background = Ui.StrengthBrush(strength.Level);
-        Motion.ScaleXTo(StrengthFill, Math.Max(strength.Score, 3) / 100f, 700);
+        Motion.ScaleXTo(StrengthFill, Math.Max(strength.Score, 3) / 100f);
 
         // "Slot-Machine"-Effekt: Zeichen rasten nacheinander ein
         if (Motion.Enabled)
