@@ -4,12 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Password Vault</title>
+  <link rel="stylesheet" href="../src/ui/tokens.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="bg" aria-hidden="true">
-    <span class="blob a"></span><span class="blob b"></span><span class="blob c"></span>
-  </div>
+  <div class="bg" aria-hidden="true"></div>
 
   <header class="top">
     <div class="brand">
@@ -190,13 +189,19 @@
         <button class="btn ghost small" id="clearNeverBtn">Leeren</button>
       </div>
       <div class="card">
+        <div><b>Animationen reduzieren</b><small>Schaltet Bewegungen fast komplett ab – auch auf Webseiten.</small></div>
+        <label class="switch"><input type="checkbox" id="reduceMotion" aria-label="Animationen reduzieren"><span class="track"></span><span class="knob"></span></label>
+      </div>
+      <div class="card">
         <div><b>Tastenkürzel</b><small><kbd>Strg</kbd> + <kbd>Umschalt</kbd> + <kbd>L</kbd> füllt den besten Treffer aus</small></div>
       </div>
       <p class="hint">Password Vault 2.0 · Alle Daten bleiben lokal auf deinem PC.</p>
     </section>
   </main>
 
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="toast" id="toast" role="status" aria-live="polite">
+    <span class="toast-icon" id="toastIcon"></span><span id="toastText"></span><i class="toast-bar"></i>
+  </div>
 
   <script type="module" src="popup.js"></script>
 </body>

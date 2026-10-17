@@ -1,4 +1,4 @@
-// Password Vault – Hintergrund-Skript (Service Worker)
+﻿// Password Vault – Hintergrund-Skript (Service Worker)
 // Einzige Stelle, die mit der Desktop-App spricht. Popup und Content-Skripte
 // schicken Nachrichten hierher; das Kopplungs-Token verlässt diesen Kontext nie.
 
@@ -157,7 +157,8 @@ async function updateBadge(tabId, url) {
   try {
     const { entries } = await api("/entries?url=" + encodeURIComponent(url));
     const n = entries.length;
-    await chrome.action.setBadgeBackgroundColor({ tabId, color: "#7C5CFF" });
+    await chrome.action.setBadgeBackgroundColor({ tabId, color: "#FFFFFF" });
+    await chrome.action.setBadgeTextColor?.({ tabId, color: "#0A0A0A" });
     await chrome.action.setBadgeText({ tabId, text: n > 0 ? String(n) : "" });
   } catch {
     await chrome.action.setBadgeText({ tabId, text: "" }).catch(() => {});

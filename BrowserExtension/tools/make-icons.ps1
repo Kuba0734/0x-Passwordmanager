@@ -1,4 +1,4 @@
-# Erzeugt die Erweiterungs-Icons (16/32/48/128 px) im Stil der App.
+﻿# Erzeugt die Erweiterungs-Icons (16/32/48/128 px) im Stil der App.
 # Aufruf: powershell -File tools\make-icons.ps1
 Add-Type -AssemblyName System.Drawing
 
@@ -24,13 +24,13 @@ foreach ($size in 16, 32, 48, 128) {
     $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    # Hintergrund: Verlauf Violett → Indigo → Cyan
+    # Hintergrund: Verlauf Grau → Schwarz
     $tile = New-RoundedRect 0 0 ($s - 0.5) ($s - 0.5) ($s * 0.28)
     $brush = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
         (New-Object System.Drawing.PointF 0, 0), (New-Object System.Drawing.PointF $s, $s),
-        [System.Drawing.Color]::FromArgb(255, 139, 92, 246), [System.Drawing.Color]::FromArgb(255, 6, 182, 212))
+        [System.Drawing.Color]::FromArgb(255, 58, 58, 58), [System.Drawing.Color]::FromArgb(255, 8, 8, 8))
     $blend = New-Object System.Drawing.Drawing2D.ColorBlend 3
-    $blend.Colors = @([System.Drawing.Color]::FromArgb(255, 139, 92, 246), [System.Drawing.Color]::FromArgb(255, 99, 102, 241), [System.Drawing.Color]::FromArgb(255, 6, 182, 212))
+    $blend.Colors = @([System.Drawing.Color]::FromArgb(255, 58, 58, 58), [System.Drawing.Color]::FromArgb(255, 24, 24, 24), [System.Drawing.Color]::FromArgb(255, 8, 8, 8))
     $blend.Positions = @(0.0, 0.5, 1.0)
     $brush.InterpolationColors = $blend
     $g.FillPath($brush, $tile)
@@ -52,11 +52,11 @@ foreach ($size in 16, 32, 48, 128) {
     $body = New-RoundedRect $bodyX $bodyY $bodyW $bodyH ($s * 0.08)
     $g.FillPath((New-Object System.Drawing.SolidBrush $white), $body)
 
-    # Schlüsselloch im Verlaufston
+    # Schlüsselloch dunkel
     if ($size -ge 32) {
         $holeR = $s * 0.05
         $hx = $s / 2; $hy = $bodyY + $bodyH * 0.45
-        $holeBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 99, 102, 241))
+        $holeBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 24, 24, 24))
         $g.FillEllipse($holeBrush, $hx - $holeR, $hy - $holeR, $holeR * 2, $holeR * 2)
         $g.FillRectangle($holeBrush, $hx - $holeR * 0.45, $hy, $holeR * 0.9, $bodyH * 0.28)
     }

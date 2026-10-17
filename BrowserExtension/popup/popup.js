@@ -216,18 +216,12 @@ function renderAll() {
   $("#allEmpty").hidden = list.length > 0;
 }
 
-const GRADIENTS = [
-  ["#8B5CF6", "#6366F1"], ["#06B6D4", "#3B82F6"], ["#EC4899", "#F43F5E"], ["#F59E0B", "#EF4444"],
-  ["#22C55E", "#10B981"], ["#14B8A6", "#06B6D4"], ["#A855F7", "#EC4899"], ["#3B82F6", "#6366F1"]
-];
-
-// Gleiche Farbe wie in der App
+// Monochrom: stabiler Grauton pro Titel, damit Einträge trotzdem unterscheidbar bleiben
 function avatarBg(title) {
   let hash = 17;
   for (const ch of (title || "").toLowerCase()) hash = (Math.imul(hash, 31) + ch.charCodeAt(0)) | 0;
-  hash = Math.abs(hash % 100000);
-  const [a, b] = GRADIENTS[hash % GRADIENTS.length];
-  return `linear-gradient(135deg,${a},${b})`;
+  const light = 10 + Math.abs(hash % 6) * 3;
+  return `hsl(0 0% ${light}%)`;
 }
 
 function initial(title) {
@@ -406,9 +400,7 @@ function generate() {
   const g = state.gen;
   g.value = generateLocal(g);
   const s = strength(g.value);
-  $("#genBar").style.width = `${Math.max(4, s.score)}%`;
-  $("#genBar").style.background = s.level >= 5 ? "var(--grad)"
-    : ["", "#ef4444", "#f97316", "#f59e0b", "#22c55e"][s.level];
+  $("#genBar").style.transform = `scaleX(${Math.max(4, s.score) / 100})`;
   $("#genLabel").textContent = s.label;
   $("#genBits").textContent = `≈ ${s.bits} Bit`;
 
@@ -534,15 +526,35 @@ $("#clearNeverBtn").addEventListener("click", async () => {
 // Kleinkram
 // ============================================================
 
+const TOAST_ICONS = {
+  ok: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  err: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>'
+};
+
 let toastTimer = null;
 function toast(text, isError = false) {
   const t = $("#toast");
-  t.textContent = text;
+  $("#toastText").textContent = text;
+  $("#toastIcon").innerHTML = TOAST_ICONS[isError ? "err" : "ok"];
   t.classList.toggle("err", isError);
+  // Ablaufleiste neu starten, auch wenn schon ein Toast sichtbar ist
+  t.classList.remove("show");
+  void t.offsetWidth;
   t.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove("show"), 1800);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2400);
 }
+
+// Eigene Einstellung zusätzlich zu prefers-reduced-motion; gilt auch für die Seiten-Oberfläche
+function applyMotion(reduce) {
+  document.documentElement.classList.toggle("reduce-motion", reduce);
+  $("#reduceMotion").checked = reduce;
+}
+chrome.storage.local.get("reduceMotion").then(r => applyMotion(!!r.reduceMotion));
+$("#reduceMotion").addEventListener("change", e => {
+  applyMotion(e.target.checked);
+  chrome.storage.local.set({ reduceMotion: e.target.checked });
+});
 
 function shake(node) {
   node.classList.remove("shake");

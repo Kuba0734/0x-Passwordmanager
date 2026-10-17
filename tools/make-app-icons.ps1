@@ -1,11 +1,11 @@
-# Erzeugt alle App-Icons (Kacheln, Taskleiste, Splash, .ico) im Verlaufs-Design.
+﻿# Erzeugt alle App-Icons (Kacheln, Taskleiste, Splash, .ico) im monochromen Design.
 # Aufruf: powershell -File tools\make-app-icons.ps1
 Add-Type -AssemblyName System.Drawing
 
 $assets = Join-Path $PSScriptRoot "..\PasswordVault.App\Assets"
-$c1 = [System.Drawing.Color]::FromArgb(255, 139, 92, 246)   # Violett
-$c2 = [System.Drawing.Color]::FromArgb(255, 99, 102, 241)   # Indigo
-$c3 = [System.Drawing.Color]::FromArgb(255, 6, 182, 212)    # Cyan
+$c1 = [System.Drawing.Color]::FromArgb(255, 58, 58, 58)     # Grau
+$c2 = [System.Drawing.Color]::FromArgb(255, 24, 24, 24)     # Fast schwarz
+$c3 = [System.Drawing.Color]::FromArgb(255, 8, 8, 8)        # Schwarz
 
 function New-RoundedRect([float]$x, [float]$y, [float]$w, [float]$h, [float]$r) {
     $p = New-Object System.Drawing.Drawing2D.GraphicsPath

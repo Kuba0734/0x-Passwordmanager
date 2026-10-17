@@ -21,20 +21,46 @@
     "service_worker": "background.js",
     "type": "module"
   },
-  "permissions": ["storage", "activeTab", "contextMenus"],
-  "host_permissions": ["http://localhost:27832/*"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://localhost:27832/*"
+  ],
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "js": ["content/content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "content/content.js"
+      ],
       "run_at": "document_idle",
       "all_frames": true
     }
   ],
   "commands": {
     "autofill": {
-      "suggested_key": { "default": "Ctrl+Shift+L" },
+      "suggested_key": {
+        "default": "Ctrl+Shift+L"
+      },
       "description": "Login auf dieser Seite ausfüllen"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/ui/tokens.css",
+        "src/ui/fonts/InterVariable.woff2"
+      ],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "use_dynamic_url": true
+    }
+  ]
 }

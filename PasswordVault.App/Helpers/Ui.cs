@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Documents;
 using Microsoft.UI.Xaml.Media;
 using PasswordVault.Core.Models;
@@ -15,16 +15,14 @@ namespace PasswordVault.App.Helpers;
 /// </summary>
 public static class Ui
 {
+    // Monochrom: Grautöne, damit Einträge trotzdem unterscheidbar bleiben
     private static readonly (Color A, Color B)[] AvatarPalette =
     {
-        (Color.FromArgb(255, 139, 92, 246), Color.FromArgb(255, 99, 102, 241)),
-        (Color.FromArgb(255, 6, 182, 212), Color.FromArgb(255, 59, 130, 246)),
-        (Color.FromArgb(255, 236, 72, 153), Color.FromArgb(255, 244, 63, 94)),
-        (Color.FromArgb(255, 245, 158, 11), Color.FromArgb(255, 239, 68, 68)),
-        (Color.FromArgb(255, 34, 197, 94), Color.FromArgb(255, 16, 185, 129)),
-        (Color.FromArgb(255, 20, 184, 166), Color.FromArgb(255, 6, 182, 212)),
-        (Color.FromArgb(255, 168, 85, 247), Color.FromArgb(255, 236, 72, 153)),
-        (Color.FromArgb(255, 59, 130, 246), Color.FromArgb(255, 99, 102, 241)),
+        (Color.FromArgb(255, 58, 58, 58), Color.FromArgb(255, 28, 28, 28)),
+        (Color.FromArgb(255, 66, 66, 66), Color.FromArgb(255, 34, 34, 34)),
+        (Color.FromArgb(255, 74, 74, 74), Color.FromArgb(255, 40, 40, 40)),
+        (Color.FromArgb(255, 50, 50, 50), Color.FromArgb(255, 22, 22, 22)),
+        (Color.FromArgb(255, 82, 82, 82), Color.FromArgb(255, 46, 46, 46)),
     };
 
     private static readonly Dictionary<int, Brush> AvatarCache = new();
@@ -110,10 +108,10 @@ public static class Ui
     public static Brush StrengthBrush(StrengthLevel level) => level switch
     {
         StrengthLevel.VeryWeak => (Brush)Application.Current.Resources["DangerBrush"],
-        StrengthLevel.Weak => new SolidColorBrush(Color.FromArgb(255, 249, 115, 22)),
-        StrengthLevel.Medium => (Brush)Application.Current.Resources["WarningBrush"],
-        StrengthLevel.Strong => (Brush)Application.Current.Resources["SuccessBrush"],
-        StrengthLevel.VeryStrong => (Brush)Application.Current.Resources["VaultGradientBrush"],
+        StrengthLevel.Weak => (Brush)Application.Current.Resources["DangerBrush"],
+        StrengthLevel.Medium => new SolidColorBrush(Color.FromArgb(255, 163, 163, 163)),
+        StrengthLevel.Strong => new SolidColorBrush(Colors.White),
+        StrengthLevel.VeryStrong => (Brush)Application.Current.Resources["SuccessBrush"],
         _ => new SolidColorBrush(Colors.Transparent)
     };
 
