@@ -84,6 +84,7 @@ public sealed partial class MainWindow : Window
         UpdateBridgeChip();
 
         SetupTray();
+        StartUpdateChecks();
         SetStateChip(false);
         RootFrame.Navigate(typeof(Views.UnlockPage));
     }
@@ -196,6 +197,103 @@ public sealed partial class MainWindow : Window
         App.Bridge.Stop();
         Application.Current.Exit();
     }
+
+    // ================= Updates =================
+
+    private DispatcherQueueTimer? _updateTimer;
+    private bool _updateRunning;
+
+    /// <summary>5 s nach dem Start, danach alle 6 Stunden – auch wenn nur das Tray-Symbol läuft.</summary>
+    private void StartUpdateChecks()
+    {
+        if (!UpdateService.IsSupported) return;
+        UpdateService.CleanUp();
+        _updateTimer = DispatcherQueue.CreateTimer();
+        _updateTimer.Interval = TimeSpan.FromSeconds(5);
+        _updateTimer.Tick += async (timer, _) =>
+        {
+            timer.Interval = TimeSpan.FromHours(6);
+            await CheckForUpdatesAsync(manual: false);
+        };
+        _updateTimer.Start();
+    }
+
+    /// <summary>
+    /// Automatisch: Fehler still ignorieren und warten, bis der Nutzer nicht mehr arbeitet.
+    /// Manuell: nachfragen und Fehler anzeigen.
+    /// </summary>
+    public async Task CheckForUpdatesAsync(bool manual)
+    {
+        if (_updateRunning || !UpdateService.IsSupported) return;
+        _updateRunning = true;
+        try
+        {
+            var release = await UpdateService.CheckAsync();
+            if (release == null)
+            {
+                if (manual) await ShowMessageAsync("Kein Update verfügbar", $"Du nutzt die neueste Version ({UpdateService.CurrentVersion}).");
+                return;
+            }
+            if (manual && !await ConfirmAsync("Update verfügbar",
+                    $"Version {release.Version} ist verfügbar (installiert: {UpdateService.CurrentVersion}). Jetzt herunterladen? Password Vault startet danach neu.",
+                    "Aktualisieren"))
+                return;
+            if (manual) ShowToast($"Lade Version {release.Version} …", "");
+
+            var files = await UpdateService.DownloadAsync(release);
+
+            // Warten, solange gearbeitet wird; nach dem Hinweis noch einmal prüfen
+            bool hidden;
+            while (true)
+            {
+                while (IsUserBusy(manual)) await Task.Delay(TimeSpan.FromSeconds(30));
+                hidden = !AppWindow.IsVisible;
+                var message = $"Update auf Version {release.Version} – Password Vault startet gleich neu.";
+                if (hidden) _tray?.ShowBalloon("Password Vault wird aktualisiert", message);
+                else ShowToast(message, "", 5);
+                await Task.Delay(TimeSpan.FromSeconds(5));
+                if (!IsUserBusy(manual)) break;
+            }
+
+            UpdateService.StartApply(files, startInTray: hidden);
+            ExitApp();
+        }
+        catch (Exception ex)
+        {
+            if (manual) await ShowMessageAsync("Update fehlgeschlagen", ex.Message);
+        }
+        finally
+        {
+            _updateRunning = false;
+        }
+    }
+
+    /// <summary>
+    /// Offener Dialog (z.B. Eintrag bearbeiten) oder ein kopiertes Passwort, das noch gelöscht werden muss.
+    /// Bei der automatischen Prüfung zählt auch kürzliche Eingabe im aktiven Fenster.
+    /// </summary>
+    private bool IsUserBusy(bool manual)
+    {
+        if (_openDialog != null || ClipboardHelper.ClearPending) return true;
+        if (manual || !AppWindow.IsVisible) return false;
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+        var info = new LASTINPUTINFO { cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf<LASTINPUTINFO>() };
+        var idleMs = GetLastInputInfo(ref info) ? (uint)Environment.TickCount - info.dwTime : uint.MaxValue;
+        return GetForegroundWindow() == hwnd && idleMs < 120_000;
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct LASTINPUTINFO
+    {
+        public uint cbSize;
+        public uint dwTime;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetLastInputInfo(ref LASTINPUTINFO info);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
 
     // ================= Navigation =================
 

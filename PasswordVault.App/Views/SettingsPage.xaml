@@ -209,7 +209,11 @@
 
             <!-- ===== Über ===== -->
             <TextBlock Text="Über" Style="{StaticResource SectionTitleStyle}" />
-            <tk:SettingsCard Header="Password Vault 2.0"
+            <tk:SettingsCard x:Name="UpdateCard" Header="Version">
+                <tk:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE895;" /></tk:SettingsCard.HeaderIcon>
+                <Button x:Name="UpdateButton" Content="Nach Updates suchen" Click="CheckUpdates_Click" />
+            </tk:SettingsCard>
+            <tk:SettingsCard Header="Password Vault"
                              Description="AES-256-GCM · Argon2id (64 MB, 4 Iterationen) · Daten verlassen nie deinen PC.">
                 <tk:SettingsCard.HeaderIcon><FontIcon Glyph="&#xE946;" /></tk:SettingsCard.HeaderIcon>
                 <TextBlock Text="Strg+N  Neu · Strg+F  Suchen · Strg+G  Generator · Strg+L  Sperren"

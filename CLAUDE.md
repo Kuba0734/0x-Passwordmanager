@@ -22,3 +22,6 @@
 - Nur CSS-Transitions und `@keyframes`, keine Libraries
 - `prefers-reduced-motion` und eine eigene Einstellung in Settings schalten Animationen fast komplett ab
 - Tab-Leiste und Adressleiste reagieren immer sofort, Animationen dürfen Eingaben nie verzögern
+
+# Regeln
+- gib mir hedes mal am schlutz ein kurzen satz was du geändert hast für den hit commit

@@ -9,6 +9,9 @@ public static class ClipboardHelper
     private static DispatcherQueueTimer? _clearTimer;
     private static string? _lastCopied;
 
+    /// <summary>Ein kopiertes Passwort wartet noch aufs automatische Löschen.</summary>
+    public static bool ClearPending => _clearTimer != null;
+
     /// <summary>
     /// Kopiert Text, blendet einen Toast ein und leert die Zwischenablage nach
     /// der eingestellten Zeit – aber nur, wenn dort noch unser Text steht.

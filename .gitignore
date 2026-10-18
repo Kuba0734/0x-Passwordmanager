@@ -7,3 +7,4 @@ BundleArtifacts/
 # Signaturschlüssel der Windows-App – privat, gehört nicht ins Repository
 *.pfx
 deploy.bat
+artifacts/

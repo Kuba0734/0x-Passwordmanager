@@ -3,6 +3,7 @@ using PasswordVault.App.Helpers;
 using PasswordVault.Core.Services;
 using System;
 using System.IO;
+using System.Linq;
 
 namespace PasswordVault.App;
 
@@ -52,14 +53,47 @@ public partial class App : Application
         }
         catch
         {
-            // Fallback für Unpackaged/Debug
+            // Fallback für Unpackaged (Setup-Version) und Debug
             var dir = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "PasswordVault");
             Directory.CreateDirectory(dir);
+            MigrateFromMsix(dir);
             return dir;
         }
     }
+
+    /// <summary>
+    /// Beim Umstieg von der MSIX-Version auf die Setup-Version den Tresor einmalig übernehmen,
+    /// sonst stünde ein leerer Tresor da. Kopiert nur, wenn hier noch keiner liegt; das Original bleibt.
+    /// </summary>
+    private static void MigrateFromMsix(string dir)
+    {
+        try
+        {
+            if (File.Exists(Path.Combine(dir, "vault.dat"))) return;
+            var packages = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Packages");
+            // Ordnername = Identity-Name aus Package.appxmanifest + "_" + Publisher-Hash
+            var source = Directory.Exists(packages)
+                ? Directory.GetDirectories(packages, MsixIdentityName + "_*")
+                    .Select(p => Path.Combine(p, "LocalState"))
+                    .FirstOrDefault(p => File.Exists(Path.Combine(p, "vault.dat")))
+                : null;
+            if (source == null) return;
+            foreach (var name in new[] { "vault.dat", "settings.json" })
+            {
+                var from = Path.Combine(source, name);
+                if (File.Exists(from)) File.Copy(from, Path.Combine(dir, name), overwrite: false);
+            }
+        }
+        catch
+        {
+            // Übernahme ist ein Komfort – ohne sie startet die App mit "Tresor erstellen"
+        }
+    }
+
+    private const string MsixIdentityName = "9a0b236c-5ec1-4d15-96f9-38c68ca64842";
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {

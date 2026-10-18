@@ -12,7 +12,7 @@
   <Identity
     Name="9a0b236c-5ec1-4d15-96f9-38c68ca64842"
     Publisher="CN=Kuba"
-    Version="1.0.17.0" />
+    Version="1.0.18.0" />
 
   <mp:PhoneIdentity PhoneProductId="9a0b236c-5ec1-4d15-96f9-38c68ca64842" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

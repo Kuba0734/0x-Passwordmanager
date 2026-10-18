@@ -94,6 +94,29 @@ public sealed partial class SettingsPage : Page
 
         VaultPathText.Text = App.VaultPath;
         UpdateBridgeStatus();
+
+        UpdateCard.Header = $"Version {UpdateService.CurrentVersion}";
+        UpdateCard.Description = UpdateService.IsSupported
+            ? "Updates werden automatisch über GitHub installiert."
+            : AutostartService.IsPackaged
+                ? "Diese Version (MSIX-Paket) wird über ein neues Paket aktualisiert."
+                : "Entwicklungs-Build – automatische Updates sind aus.";
+        UpdateButton.IsEnabled = UpdateService.IsSupported;
+    }
+
+    private async void CheckUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateButton.IsEnabled = false;
+        UpdateButton.Content = "Suche …";
+        try
+        {
+            await App.MainWindowInstance.CheckForUpdatesAsync(manual: true);
+        }
+        finally
+        {
+            UpdateButton.Content = "Nach Updates suchen";
+            UpdateButton.IsEnabled = true;
+        }
     }
 
     private async Task LoadWindowsHelloAsync()
