@@ -86,12 +86,90 @@
   // Werte setzen (kompatibel mit React, Vue, Angular …)
   // ==========================================================
 
+  // ==========================================================
+  // Kreditkarten-Felder
+  // ==========================================================
+
+  const CC_AUTOCOMPLETE = {
+    "cc-number": "number", "cc-name": "name", "cc-exp": "exp",
+    "cc-exp-month": "expMonth", "cc-exp-year": "expYear", "cc-csc": "cvc"
+  };
+  // Reihenfolge zählt: spezifische Rollen zuerst
+  const CC_HINTS = [
+    ["cvc", /cvc|cvv|csc|security.?code|sicherheitscode|prüfnummer|kartenprüf/],
+    ["number", /cc.?num|card.?num|card.?no\b|kartennummer|kreditkartennr/],
+    ["name", /cc.?name|card.?holder|holder.?name|name.?on.?card|karteninhaber/],
+    ["expMonth", /(exp|ablauf|cc).*(month|monat|\bmm\b)/],
+    ["expYear", /(exp|ablauf|cc).*(year|jahr|\byy|\bjj)/],
+    ["exp", /expir|exp.?date|ablauf|gültig|valid.?(thru|until)|mm\s*\/\s*(yy|jj)/]
+  ];
+
+  function cardRole(el) {
+    if (el instanceof HTMLInputElement) {
+      if (!["text", "tel", "number", "password", ""].includes((el.getAttribute("type") || "").toLowerCase())) return null;
+    } else if (!(el instanceof HTMLSelectElement)) return null;
+    const ac = CC_AUTOCOMPLETE[(el.getAttribute("autocomplete") || "").toLowerCase()];
+    if (ac) return ac;
+    const hint = `${el.name} ${el.id} ${el.placeholder || ""} ${el.getAttribute("aria-label") || ""}`.toLowerCase();
+    return CC_HINTS.find(([, re]) => re.test(hint))?.[0] ?? null;
+  }
+
+  /** Kartenformular nur, wenn es ein Kartennummer-Feld gibt (sonst z.B. Geburtsdatum-Felder). */
+  function cardFields(scope) {
+    const f = {};
+    for (const el of scope.querySelectorAll("input, select")) {
+      if (!isVisible(el)) continue;
+      const role = cardRole(el);
+      if (role && !f[role]) f[role] = el;
+    }
+    return f.number ? f : null;
+  }
+
+  // shortcut: Felder in getrennten iframes (z.B. Stripe Elements) werden nicht gemeinsam erkannt
+  function cardFieldsFor(el) {
+    if (!el || !cardRole(el)) return null;
+    const f = cardFields(el.form || document);
+    return f && Object.values(f).includes(el) ? f : null;
+  }
+
+  function fillCard(card, scope) {
+    const f = cardFields(scope);
+    if (!f) return false;
+    const [mm = "", yy = ""] = (card.expiry || "").split("/");
+    setValue(f.number, card.number);
+    if (card.holder) setValue(f.name, card.holder);
+    if (mm && yy) {
+      if (f.exp) setValue(f.exp, expiryText(f.exp, mm, yy));
+      if (f.expMonth) setValue(f.expMonth, mm);
+      if (f.expYear) setValue(f.expYear, f.expYear.maxLength === 4 || /yyyy|jjjj/i.test(f.expYear.placeholder || "") ? "20" + yy : yy);
+    }
+    if (card.cvc) setValue(f.cvc, card.cvc);
+    return true;
+  }
+
+  function expiryText(input, mm, yy) {
+    if (input instanceof HTMLSelectElement) return `${mm}/${yy}`;
+    if (input.maxLength === 7 || /yyyy|jjjj/i.test(input.placeholder || "")) return `${mm}/20${yy}`;
+    if (input.maxLength === 4) return mm + yy;
+    return `${mm}/${yy}`;
+  }
+
+  /** Monat/Jahr in Auswahllisten: "8", "08", "08 - August", "2029" oder "29". */
+  function selectOption(select, value) {
+    const n = parseInt(value, 10);
+    const opt = [...select.options].find(o => o.value === value)
+      || [...select.options].find(o => [o.value, o.text].some(v => parseInt(v, 10) === n))
+      || [...select.options].find(o => [o.value, o.text].some(v => parseInt(v, 10) === n + 2000));
+    if (opt) select.value = opt.value;
+  }
+
   const nativeSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
 
   function setValue(input, value) {
     if (!input) return;
     input.focus({ preventScroll: true });
-    nativeSetter.call(input, value);
+    if (input instanceof HTMLSelectElement) selectOption(input, value);
+    else nativeSetter.call(input, value);
     input.dispatchEvent(new Event("input", { bubbles: true, composed: true }));
     input.dispatchEvent(new Event("change", { bubbles: true }));
     flash(input);
@@ -155,7 +233,8 @@
   const LOGO = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor" stroke="none"/></svg>`;
   const ICON_LOCK = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>`;
   const ICON_SPARK = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6"/></svg>`;
-  const ICON_CLOSE = `<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
+  const ICON_CARD = `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 10h18M7 15h3"/></svg>`;
+  const ICON_CLOSE =`<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>`;
 
   const STYLES = `
     :host { all: initial; --font: "PV Inter", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -372,7 +451,8 @@
     placeAt(menu, anchor, true);
     const current = menu;
 
-    const res = await send({ type: "frameMatches" });
+    const forCard = !!cardFieldsFor(anchor);
+    const res = await send({ type: forCard ? "cardMatches" : "frameMatches" });
     if (menu !== current) return;
 
     const body = [];
@@ -388,6 +468,14 @@
       body.push(`<div class="note">Die Erweiterung ist noch nicht mit der App gekoppelt. Klicke auf das Password-Vault-Symbol in der Symbolleiste.</div>`);
     } else if (res.state === "locked") {
       body.push(`<div class="note">${ICON_LOCK}<span>Der Tresor ist gesperrt. Entsperre ihn über das Password-Vault-Symbol in der Symbolleiste oder in der App.</span></div>`);
+    } else if (forCard) {
+      for (const c of res.cards) {
+        item(`<span class="avatar">${ICON_CARD}</span>
+              <span class="meta"><span class="title">${esc(c.title)}</span><span class="sub mono">•••• ${esc(c.last4)}${c.expiry ? " · " + esc(c.expiry) : ""}</span></span>`,
+          `data-card="${esc(c.id)}"`);
+      }
+      if (res.cards.length === 0)
+        body.push(`<div class="note">Keine Kreditkarten im Tresor. Lege sie in der App mit der Kategorie „Karte“ an.</div>`);
     } else {
       for (const e of res.entries) {
         item(`<span class="avatar" style="${avatarStyle(e.title)}">${esc(initial(e.title))}</span>
@@ -399,7 +487,7 @@
     }
 
     // Passwortvorschlag für Registrierungs- / Passwort-ändern-Formulare
-    if (anchor?.type === "password" && isNewPasswordField(anchor)) {
+    if (!forCard && anchor?.type === "password" && isNewPasswordField(anchor)) {
       const gen = await send({ type: "generate" });
       if (gen?.password && menu === current) {
         if (body.length) body.push(`<div class="sep"></div>`);
@@ -413,11 +501,24 @@
     current.innerHTML = current.firstElementChild.outerHTML + body.join("");
     current.querySelectorAll(".item").forEach(btn => {
       btn.addEventListener("mousedown", e => e.preventDefault());
-      btn.addEventListener("click", () => onPick(btn));
+      // Nur echte Klicks/Tastendrücke des Nutzers lösen das Ausfüllen aus
+      btn.addEventListener("click", e => e.isTrusted && onPick(btn));
     });
   }
 
+  // Während wir selbst ausfüllen, soll das Fokussieren der Felder kein neues Menü öffnen
+  let filling = false;
+
   async function onPick(btn) {
+    if (btn.dataset.card) {
+      const scope = anchor?.form || document;
+      const card = await send({ type: "fillCard", id: btn.dataset.card });
+      filling = true;
+      if (card && !card.error) fillCard(card, scope);
+      filling = false;
+      closeMenu();
+      return;
+    }
     if (btn.dataset.generated) {
       const pw = btn.dataset.generated;
       const scope = anchor?.form || document;
@@ -434,7 +535,13 @@
 
   document.addEventListener("focusin", e => {
     const t = e.target;
-    if (!(t instanceof HTMLInputElement) || !alive()) return;
+    if (filling || !(t instanceof HTMLInputElement || t instanceof HTMLSelectElement) || !alive()) return;
+    if (cardFieldsFor(t)) {
+      showBadge(t);
+      if (!t.value) openMenu();
+      return;
+    }
+    if (!(t instanceof HTMLInputElement)) return;
     const fields = loginFields();
     const relevant = fields && (t === fields.username || t === fields.password || fields.all.includes(t));
     if (!relevant) return;
@@ -469,7 +576,8 @@
 
   function capture(scopeHint) {
     const scope = scopeHint?.form || scopeHint?.closest?.("form") || document;
-    const pws = [...scope.querySelectorAll('input[type="password"]')].filter(i => i.value);
+    // CVC-Felder sind manchmal type="password" – nie als Login speichern
+    const pws = [...scope.querySelectorAll('input[type="password"]')].filter(i => i.value && !cardFieldsFor(i));
     if (pws.length === 0) return;
     // Bei "Passwort ändern": das neue (letzte) Passwort nehmen
     const pw = pws.length > 1 ? pws[pws.length - 1] : pws[0];

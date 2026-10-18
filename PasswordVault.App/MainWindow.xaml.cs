@@ -84,6 +84,9 @@ public sealed partial class MainWindow : Window
         UpdateBridgeChip();
 
         SetupTray();
+        // Vor dem Start der Bridge, damit sich die Erweiterung aus den neuen Dateien neu lädt
+        _extensionUpdated = ExtensionFolder.SyncIfInstalled();
+        RootGrid.Loaded += (_, _) => _ = ShowWhatsNewAsync();
         StartUpdateChecks();
         SetStateChip(false);
         RootFrame.Navigate(typeof(Views.UnlockPage));
@@ -187,6 +190,7 @@ public sealed partial class MainWindow : Window
             p.Restore();
         Activate();
         SetForegroundWindow(WinRT.Interop.WindowNative.GetWindowHandle(this));
+        _ = ShowWhatsNewAsync();
     }
 
     private void ExitApp()
@@ -234,8 +238,10 @@ public sealed partial class MainWindow : Window
                 if (manual) await ShowMessageAsync("Kein Update verfügbar", $"Du nutzt die neueste Version ({UpdateService.CurrentVersion}).");
                 return;
             }
+            var preview = release.Notes.Length > 600 ? release.Notes[..600] + " …" : release.Notes;
             if (manual && !await ConfirmAsync("Update verfügbar",
-                    $"Version {release.Version} ist verfügbar (installiert: {UpdateService.CurrentVersion}). Jetzt herunterladen? Password Vault startet danach neu.",
+                    $"Version {release.Version} ist verfügbar (installiert: {UpdateService.CurrentVersion}). Jetzt herunterladen? Password Vault startet danach neu."
+                    + (preview.Length > 0 ? $"\n\nNeu:\n{preview}" : ""),
                     "Aktualisieren"))
                 return;
             if (manual) ShowToast($"Lade Version {release.Version} …", "");
@@ -255,6 +261,9 @@ public sealed partial class MainWindow : Window
                 if (!IsUserBusy(manual)) break;
             }
 
+            App.Settings.Current.WhatsNewVersion = release.Version.ToString();
+            App.Settings.Current.WhatsNewNotes = release.Notes;
+            App.Settings.Save();
             UpdateService.StartApply(files, startInTray: hidden);
             ExitApp();
         }
@@ -266,6 +275,66 @@ public sealed partial class MainWindow : Window
         {
             _updateRunning = false;
         }
+    }
+
+    private bool _extensionUpdated, _whatsNewBalloonShown;
+
+    /// <summary>Nach einem Update einmal zeigen, was neu ist und dass die Erweiterung mit aktualisiert wurde.</summary>
+    private async Task ShowWhatsNewAsync()
+    {
+        var s = App.Settings.Current;
+        if (s.WhatsNewVersion.Length == 0 && !_extensionUpdated) return;
+
+        // Start im Infobereich: kurzer Hinweis jetzt, Details beim Öffnen des Fensters
+        if (!AppWindow.IsVisible)
+        {
+            if (s.WhatsNewVersion.Length > 0 && !_whatsNewBalloonShown)
+            {
+                _tray?.ShowBalloon("Password Vault wurde aktualisiert",
+                    $"Version {s.WhatsNewVersion} ist installiert. Öffne die App, um zu sehen, was neu ist.");
+                _whatsNewBalloonShown = true;
+            }
+            return;
+        }
+        if (_openDialog != null) return;
+
+        var version = s.WhatsNewVersion;
+        var notes = s.WhatsNewNotes;
+        var extension = _extensionUpdated;
+        s.WhatsNewVersion = s.WhatsNewNotes = "";
+        _extensionUpdated = false;
+        App.Settings.Save();
+
+        const string extensionHint = "Die Browser-Erweiterung im Ordner Dokumente wurde ebenfalls aktualisiert. "
+            + "Zeigt der Browser noch die alte Version, lade sie einmal unter chrome://extensions neu.";
+        if (version.Length == 0)
+        {
+            ShowToast("Browser-Erweiterung wurde aktualisiert", "", 5);
+            return;
+        }
+
+        var content = new StackPanel { Spacing = 12, MaxWidth = 460 };
+        content.Children.Add(new TextBlock
+        {
+            Text = notes.Length > 0 ? notes : "Fehlerbehebungen und Verbesserungen.",
+            TextWrapping = TextWrapping.Wrap,
+            IsTextSelectionEnabled = true
+        });
+        if (extension)
+            content.Children.Add(new TextBlock
+            {
+                Text = extensionHint,
+                TextWrapping = TextWrapping.Wrap,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorSecondaryBrush"]
+            });
+
+        await ShowDialogAsync(new ContentDialog
+        {
+            Title = $"Neu in Version {version}",
+            Content = new ScrollViewer { Content = content, MaxHeight = 420 },
+            CloseButtonText = "Alles klar",
+            DefaultButton = ContentDialogButton.Close
+        });
     }
 
     /// <summary>

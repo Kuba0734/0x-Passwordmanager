@@ -20,4 +20,8 @@ public class AppSettings
 
     public bool MinimizeToTray { get; set; } = true;
     public bool TrayHintShown { get; set; } = false;
+
+    // Vom Updater vor dem Neustart gesetzt, nach dem Neustart einmal als „Was ist neu“ angezeigt
+    public string WhatsNewVersion { get; set; } = string.Empty;
+    public string WhatsNewNotes { get; set; } = string.Empty;
 }

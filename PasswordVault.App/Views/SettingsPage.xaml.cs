@@ -325,16 +325,11 @@ public sealed partial class SettingsPage : Page
 
     private async void InstallExtension_Click(object sender, RoutedEventArgs e)
     {
-        var source = Path.Combine(AppContext.BaseDirectory, "BrowserExtension");
-        var target = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-            "PasswordVault Browser-Erweiterung");
+        var target = ExtensionFolder.Target;
 
         try
         {
-            if (!Directory.Exists(source))
-                throw new DirectoryNotFoundException("Die Erweiterungsdateien fehlen im App-Paket.");
-            CopyDirectory(source, target);
+            ExtensionFolder.Install();
         }
         catch (Exception ex)
         {
@@ -370,18 +365,6 @@ public sealed partial class SettingsPage : Page
         };
         if (await App.MainWindowInstance.ShowDialogAsync(dialog) == ContentDialogResult.Primary)
             ClipboardHelper.CopyPlain(target, "Pfad");
-    }
-
-    private static void CopyDirectory(string source, string target)
-    {
-        Directory.CreateDirectory(target);
-        foreach (var file in Directory.GetFiles(source, "*", SearchOption.AllDirectories))
-        {
-            var relative = Path.GetRelativePath(source, file);
-            var destination = Path.Combine(target, relative);
-            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
-            File.Copy(file, destination, overwrite: true);
-        }
     }
 
     // ================= Generator =================

@@ -32,6 +32,7 @@ namespace PasswordVault.App.Helpers;
 ///   POST /api/unlock  {password}    → 200 | 401
 ///   POST /api/lock
 ///   GET  /api/entries?url=&amp;q=       → { entries: [ohne Passwörter] }
+///   GET  /api/cards                 → { cards: [ohne Nummer/CVC, mit last4] }
 ///   GET  /api/entries/{id}          → vollständiger Eintrag
 ///   POST /api/entries               → { id }
 ///   PUT  /api/entries/{id}          → Teil-Update (z.B. neues Passwort)
@@ -155,7 +156,9 @@ public sealed class BrowserBridgeService : IDisposable
                 {
                     ["app"] = "PasswordVault",
                     ["version"] = Version,
-                    ["paired"] = authorized
+                    ["paired"] = authorized,
+                    // Die Erweiterung lädt sich neu, wenn ihre Version davon abweicht
+                    ["extension"] = ExtensionFolder.BundledVersion
                 };
                 if (authorized) ping["unlocked"] = _store.IsUnlocked;
                 await WriteJson(res, 200, ping);
@@ -231,6 +234,21 @@ public sealed class BrowserBridgeService : IDisposable
                 return;
             }
 
+            if (path == "/api/cards" && method == "GET")
+            {
+                // Karten gehören zu keiner Website → immer alle, nur mit den letzten 4 Ziffern
+                var arr = new JsonArray();
+                foreach (var e in _store.GetEntries().Where(e => e.Category == Categories.Cards && e.Password.Length > 0))
+                {
+                    var card = Summary(e);
+                    card["last4"] = e.Password.Length >= 4 ? e.Password[^4..] : e.Password;
+                    card["expiry"] = e.Expiry;
+                    arr.Add(card);
+                }
+                await WriteJson(res, 200, new JsonObject { ["cards"] = arr });
+                return;
+            }
+
             if (path == "/api/entries" && method == "POST")
             {
                 var body = await ReadJson(req);
@@ -265,6 +283,8 @@ public sealed class BrowserBridgeService : IDisposable
                     var full = Summary(entry);
                     full["password"] = entry.Password;
                     full["notes"] = entry.Notes;
+                    full["expiry"] = entry.Expiry;
+                    full["cvc"] = entry.Cvc;
                     await WriteJson(res, 200, full);
                     return;
                 }

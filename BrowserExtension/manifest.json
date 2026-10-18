@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Password Vault",
-  "version": "2.0.0",
-  "description": "Füllt Logins aus deinem lokalen Password Vault aus, generiert sichere Passwörter und speichert neue Zugangsdaten.",
+  "version": "2.1.0",
+  "description": "Füllt Logins und Kreditkarten aus deinem lokalen Password Vault aus, generiert sichere Passwörter und speichert neue Zugangsdaten.",
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",

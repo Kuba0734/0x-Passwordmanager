@@ -24,7 +24,7 @@ public static class UpdateService
     public const string ZipName = "PasswordVault-win-x64.zip";
     private const string ExeName = "PasswordVault.App.exe";
 
-    public sealed record Release(Version Version, Uri ZipUrl, Uri ShaUrl);
+    public sealed record Release(Version Version, Uri ZipUrl, Uri ShaUrl, string Notes);
 
     private static readonly HttpClient Http = CreateClient();
 
@@ -77,7 +77,8 @@ public static class UpdateService
         }
         if (zip == null || sha == null)
             throw new InvalidDataException($"Im Release {tag} fehlt {ZipName} oder die Prüfsumme.");
-        return new Release(latest, zip, sha);
+        var notes = json.RootElement.TryGetProperty("body", out var body) ? body.GetString() ?? "" : "";
+        return new Release(latest, zip, sha, notes.Trim());
     }
 
     /// <summary>

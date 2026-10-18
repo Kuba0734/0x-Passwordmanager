@@ -6,6 +6,7 @@ import { getHost, matchScore, generateLocal } from "./shared.js";
 
 const API = "http://localhost:27832/api";
 const PENDING_SAVE_TTL = 3 * 60 * 1000;
+const CARDS = "Kreditkarten"; // Categories.Cards in der App
 
 class VaultError extends Error {
   constructor(code) {
@@ -63,6 +64,7 @@ async function getStatus() {
   const { pairing } = await chrome.storage.session.get("pairing");
   try {
     const ping = await api("/ping", { timeout: 2500 });
+    await reloadIfOutdated(ping.extension);
     if (!ping.paired) {
       if (await getToken()) await chrome.storage.local.remove("token"); // Token wurde in der App widerrufen
       if (pairing && !pairing.result) return { state: "pairing", code: pairing.code };
@@ -72,6 +74,19 @@ async function getStatus() {
   } catch {
     return { state: "offline" };
   }
+}
+
+/**
+ * Die App kopiert bei Updates die neue Erweiterung in den Dokumente-Ordner.
+ * Eine entpackte Erweiterung liest ihre Dateien bei runtime.reload() neu ein.
+ * Pro Zielversion nur ein Versuch, falls der Browser einen anderen Ordner geladen hat.
+ */
+async function reloadIfOutdated(appVersion) {
+  if (!appVersion || appVersion === chrome.runtime.getManifest().version) return;
+  const { reloadedFor } = await chrome.storage.local.get("reloadedFor");
+  if (reloadedFor === appVersion) return;
+  await chrome.storage.local.set({ reloadedFor: appVersion });
+  chrome.runtime.reload();
 }
 
 // ============================================================
@@ -170,6 +185,7 @@ async function updateBadge(tabId, url) {
  * Ausnahme: der Benutzer wählt im Popup bewusst einen fremden Eintrag → nur Haupt-Frame.
  */
 async function fillTab(tabId, entry, { allowMismatch = false } = {}) {
+  if (entry.category === CARDS) return false; // Kartennummer nie in Login-Felder
   const tabFrames = await getFrames(tabId);
   let targets = [...tabFrames.entries()]
     .filter(([, f]) => f.hasLogin && matchScore(entry.url, f.url) > 0)
@@ -312,13 +328,26 @@ async function handle(msg, sender) {
       const status = await getStatus();
       if (status.state !== "unlocked") return { state: status.state, entries: [] };
       const { entries } = await api("/entries?url=" + encodeURIComponent(sender.url));
-      return { state: "unlocked", entries };
+      return { state: "unlocked", entries: entries.filter(e => e.category !== CARDS) };
     }
     case "fillFromFrame": {
       // Ein Frame darf nur Passwörter erhalten, die zu seiner eigenen Herkunft passen
       const entry = await api("/entries/" + encodeURIComponent(msg.id));
-      if (matchScore(entry.url, sender.url) === 0) throw new VaultError("origin_mismatch");
+      if (entry.category === CARDS || matchScore(entry.url, sender.url) === 0) throw new VaultError("origin_mismatch");
       return { username: entry.username, password: entry.password };
+    }
+    case "cardMatches": {
+      // Ohne Kartennummer und CVC, nur Titel, Inhaber, letzte 4 Ziffern
+      const status = await getStatus();
+      if (status.state !== "unlocked") return { state: status.state, cards: [] };
+      const { cards } = await api("/cards");
+      return { state: "unlocked", cards };
+    }
+    case "fillCard": {
+      // Nur nach einem echten Klick in unserem Menü (prüft das Content-Skript)
+      const entry = await api("/entries/" + encodeURIComponent(msg.id));
+      if (entry.category !== CARDS) throw new VaultError("forbidden");
+      return { holder: entry.username, number: entry.password, expiry: entry.expiry || "", cvc: entry.cvc || "" };
     }
     case "captured":
       await handleCaptured(sender, msg);
