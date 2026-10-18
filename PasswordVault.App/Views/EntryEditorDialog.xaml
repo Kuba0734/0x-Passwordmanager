@@ -105,7 +105,8 @@
                         <TextBlock Text="Generieren" />
                     </StackPanel>
                 </Button>
-                <DropDownButton Grid.Column="2"
+                <DropDownButton x:Name="GeneratorOptions"
+                                Grid.Column="2"
                                 VerticalAlignment="Bottom"
                                 MinHeight="32"
                                 CornerRadius="8"
@@ -132,7 +133,7 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
             </Grid>
-            <Grid ColumnSpacing="10">
+            <Grid x:Name="StrengthRow" ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
@@ -147,6 +148,27 @@
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
             </Grid>
         </StackPanel>
+
+        <!-- Nur für Kreditkarten -->
+        <Grid x:Name="CardPanel" ColumnSpacing="8" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="ExpiryBox"
+                     Header="Gültig bis"
+                     PlaceholderText="MM/JJ"
+                     MaxLength="5"
+                     InputScope="Number"
+                     TextChanged="ExpiryBox_TextChanged" />
+            <PasswordBox x:Name="CvcInput"
+                         Grid.Column="1"
+                         Header="CVC"
+                         PlaceholderText="123"
+                         MaxLength="4"
+                         InputScope="NumericPin"
+                         PasswordRevealMode="Peek" />
+        </Grid>
 
         <TextBox x:Name="UrlBox"
                  Header="Website"

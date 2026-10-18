@@ -18,6 +18,8 @@ public class EditEntryPage : ContentPage
     private readonly Editor _notes = new() { Placeholder = "Notizen", AutoSize = EditorAutoSizeOption.TextChanges, MinimumHeightRequest = 60 };
     private readonly Picker _category = new() { Title = "Kategorie", TextColor = Ui.Text, TitleColor = Ui.Muted, ItemsSource = Categories.All };
     private readonly Switch _favorite = new();
+    private readonly Entry _expiry = new() { Placeholder = "MM/JJ", Keyboard = Keyboard.Numeric, MaxLength = 5, FontFamily = "Menlo" };
+    private readonly Entry _cvc = new() { Placeholder = "123", Keyboard = Keyboard.Numeric, MaxLength = 4, IsPassword = true, FontFamily = "Menlo" };
     private readonly Slider _length = new(8, 64, 20);
     private readonly Switch _symbols = new() { IsToggled = true };
 
@@ -33,6 +35,8 @@ public class EditEntryPage : ContentPage
         _password.Text = _entry.Password;
         _url.Text = _entry.Url;
         _notes.Text = _entry.Notes;
+        _expiry.Text = _entry.Expiry;
+        _cvc.Text = _entry.Cvc;
         _category.SelectedItem = Categories.All.Contains(_entry.Category) ? _entry.Category : Categories.General;
         _favorite.IsToggled = _entry.IsFavorite;
         foreach (var e in new[] { _username, _url }) e.IsSpellCheckEnabled = e.IsTextPredictionEnabled = false;
@@ -68,13 +72,45 @@ public class EditEntryPage : ContentPage
             }
         });
 
+        var userField = Ui.Field("Benutzername", _username);
+        var passwordField = Ui.Field("Passwort", _password, show, generate);
+        var cardRow = new Grid
+        {
+            ColumnDefinitions = { new(GridLength.Star), new(GridLength.Star) },
+            ColumnSpacing = 12,
+            Children = { Ui.Field("Gültig bis", _expiry), WithColumn(Ui.Field("CVC", _cvc), 1) }
+        };
+        // "0829" → "08/29" beim Tippen
+        _expiry.TextChanged += (_, e) =>
+        {
+            var t = e.NewTextValue ?? "";
+            if (t.Length == 3 && !t.Contains('/') && char.IsDigit(t[2])) _expiry.Text = t[..2] + "/" + t[2];
+        };
+
+        // Kreditkarte: eigenes Formular statt Passwort-Generator
+        void ApplyCategory()
+        {
+            bool card = _category.SelectedItem as string == Categories.Cards;
+            SetCaption(userField, card ? "Karteninhaber" : "Benutzername");
+            SetCaption(passwordField, card ? "Kartennummer" : "Passwort");
+            _username.Placeholder = card ? "Max Mustermann" : "E-Mail oder Name";
+            _username.Keyboard = card ? Keyboard.Text : Keyboard.Email;
+            _password.Placeholder = card ? "1234 5678 9012 3456" : "Passwort";
+            _password.Keyboard = card ? Keyboard.Numeric : Keyboard.Default;
+            generate.IsVisible = meter.IsVisible = generator.IsVisible = !card;
+            cardRow.IsVisible = card;
+        }
+        ApplyCategory();
+        _category.SelectedIndexChanged += (_, _) => ApplyCategory();
+
         var views = new List<View>
         {
             Ui.Field("Titel", _title),
-            Ui.Field("Benutzername", _username),
-            Ui.Field("Passwort", _password, show, generate),
+            userField,
+            passwordField,
             meter,
             generator,
+            cardRow,
             Ui.Field("Website", _url),
             Ui.Card(new VerticalStackLayout { Spacing = 4, Children = { Row("Kategorie", _category), Row("Favorit", _favorite) } }),
             Ui.Field("Notizen", _notes)
@@ -109,6 +145,9 @@ public class EditEntryPage : ContentPage
         return view;
     }
 
+    // Ui.Field legt die Beschriftung als erstes Kind ins Grid
+    private static void SetCaption(Border field, string text) => ((Label)((Grid)field.Content).Children[0]).Text = text;
+
     private static Grid Row(string label, View control)
     {
         control.HorizontalOptions = LayoutOptions.End;
@@ -141,12 +180,24 @@ public class EditEntryPage : ContentPage
             return;
         }
 
+        var category = _category.SelectedItem as string ?? Categories.General;
+        bool card = category == Categories.Cards;
+        var expiry = _expiry.Text?.Trim() ?? "";
+        if (card && expiry.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(expiry, @"^(0[1-9]|1[0-2])/\d{2}$"))
+        {
+            Ui.Toast(this, "Ablaufdatum bitte als MM/JJ eingeben", error: true);
+            await Ui.Shake(_expiry);
+            return;
+        }
+
         _entry.Title = title;
         _entry.Username = _username.Text?.Trim() ?? "";
-        _entry.Password = _password.Text ?? "";
+        _entry.Password = card ? (_password.Text ?? "").Replace(" ", "") : _password.Text ?? "";
+        _entry.Expiry = card ? expiry : "";
+        _entry.Cvc = card ? _cvc.Text?.Trim() ?? "" : "";
         _entry.Url = _url.Text?.Trim() ?? "";
         _entry.Notes = _notes.Text ?? "";
-        _entry.Category = _category.SelectedItem as string ?? Categories.General;
+        _entry.Category = category;
         _entry.IsFavorite = _favorite.IsToggled;
 
         try

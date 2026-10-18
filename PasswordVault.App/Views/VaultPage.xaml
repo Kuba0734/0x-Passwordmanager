@@ -286,7 +286,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="2">
-                                <TextBlock Text="BENUTZERNAME" Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock x:Name="UserLabel" Text="BENUTZERNAME" Style="{StaticResource FieldLabelStyle}" />
                                 <TextBlock x:Name="DetailUser" IsTextSelectionEnabled="True" TextWrapping="Wrap" />
                             </StackPanel>
                             <Button Grid.Column="1" Style="{StaticResource IconButtonStyle}"
@@ -304,7 +304,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="4">
-                                <TextBlock Text="PASSWORT" Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock x:Name="PasswordLabel" Text="PASSWORT" Style="{StaticResource FieldLabelStyle}" />
                                 <TextBlock x:Name="DetailPassword"
                                            FontFamily="{StaticResource MonoFont}"
                                            FontSize="15"
@@ -337,6 +337,28 @@
                                 <Border x:Name="StrengthFill" CornerRadius="3" />
                             </Grid>
                         </StackPanel>
+
+                        <!-- Kreditkarte: Ablaufdatum + CVC -->
+                        <Grid x:Name="CardField" Style="{StaticResource DetailFieldStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="GÜLTIG BIS" Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock x:Name="DetailExpiry" FontFamily="{StaticResource MonoFont}" FontSize="15" IsTextSelectionEnabled="True" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="4">
+                                <TextBlock Text="CVC" Style="{StaticResource FieldLabelStyle}" />
+                                <TextBlock x:Name="DetailCvc" FontFamily="{StaticResource MonoFont}" FontSize="15" IsTextSelectionEnabled="True" />
+                            </StackPanel>
+                            <Button Grid.Column="2" Style="{StaticResource IconButtonStyle}"
+                                    VerticalAlignment="Center"
+                                    Click="CopyCvc_Click" ToolTipService.ToolTip="CVC kopieren" AutomationProperties.Name="CVC kopieren">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                            </Button>
+                        </Grid>
 
                         <!-- Website -->
                         <Grid x:Name="UrlField" Style="{StaticResource DetailFieldStyle}">

@@ -54,27 +54,53 @@ public class EntryPage : ContentPage
         ((View)header.Children[0]).HorizontalOptions = LayoutOptions.Center;
         views.Add(header);
 
+        bool card = e.Category == Categories.Cards;
+        var userCaption = card ? "Karteninhaber" : "Benutzername";
+        var pwCaption = card ? "Kartennummer" : "Passwort";
+
         if (!string.IsNullOrEmpty(e.Username))
-            views.Add(Ui.Field("Benutzername", Value(e.Username),
-                Ui.IconButton(Ui.Icons.Copy, "Benutzername kopieren", (_, _) => Copy(e.Username, "Benutzername kopiert"))));
+            views.Add(Ui.Field(userCaption, Value(e.Username),
+                Ui.IconButton(Ui.Icons.Copy, $"{userCaption} kopieren", (_, _) => Copy(e.Username, $"{userCaption} kopiert"))));
 
         if (!string.IsNullOrEmpty(e.Password))
         {
             var pw = Value(Mask(e.Password));
             pw.FontFamily = "Menlo";
             Border? toggle = null;
-            toggle = Ui.IconButton(Ui.Icons.Eye, "Passwort anzeigen", (_, _) =>
+            toggle = Ui.IconButton(Ui.Icons.Eye, $"{pwCaption} anzeigen", (_, _) =>
             {
                 _showPassword = !_showPassword;
                 pw.Text = _showPassword ? e.Password : Mask(e.Password);
                 Ui.SetIcon(toggle!, _showPassword ? Ui.Icons.EyeOff : Ui.Icons.Eye);
             });
-            views.Add(Ui.Field("Passwort", pw, toggle,
-                Ui.IconButton(Ui.Icons.Copy, "Passwort kopieren", (_, _) => Copy(e.Password, "Passwort kopiert – wird in 30 s gelöscht"))));
+            views.Add(Ui.Field(pwCaption, pw, toggle,
+                Ui.IconButton(Ui.Icons.Copy, $"{pwCaption} kopieren", (_, _) => Copy(e.Password, $"{pwCaption} kopiert – wird in 30 s gelöscht"))));
 
-            var (meter, update) = Ui.StrengthMeter();
-            update(e.Password);
-            views.Add(meter);
+            if (!card)
+            {
+                var (meter, update) = Ui.StrengthMeter();
+                update(e.Password);
+                views.Add(meter);
+            }
+        }
+
+        if (card && !string.IsNullOrEmpty(e.Expiry))
+            views.Add(Ui.Field("Gültig bis", Value(e.Expiry),
+                Ui.IconButton(Ui.Icons.Copy, "Ablaufdatum kopieren", (_, _) => Copy(e.Expiry, "Ablaufdatum kopiert"))));
+
+        if (card && !string.IsNullOrEmpty(e.Cvc))
+        {
+            var cvc = Value("•••");
+            cvc.FontFamily = "Menlo";
+            Border? toggle = null;
+            toggle = Ui.IconButton(Ui.Icons.Eye, "CVC anzeigen", (_, _) =>
+            {
+                var shown = cvc.Text != e.Cvc;
+                cvc.Text = shown ? e.Cvc : "•••";
+                Ui.SetIcon(toggle!, shown ? Ui.Icons.EyeOff : Ui.Icons.Eye);
+            });
+            views.Add(Ui.Field("CVC", cvc, toggle,
+                Ui.IconButton(Ui.Icons.Copy, "CVC kopieren", (_, _) => Copy(e.Cvc, "CVC kopiert – wird in 30 s gelöscht"))));
         }
 
         if (!string.IsNullOrEmpty(e.Url))

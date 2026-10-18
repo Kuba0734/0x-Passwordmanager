@@ -35,6 +35,8 @@ public sealed partial class EntryEditorDialog : ContentDialog
         PasswordInput.Password = entry.Password;
         UrlBox.Text = entry.Url;
         NotesBox.Text = entry.Notes;
+        ExpiryBox.Text = entry.Expiry;
+        CvcInput.Password = entry.Cvc;
         FavoriteToggle.IsOn = entry.IsFavorite;
 
         var s = App.Settings.Current;
@@ -58,7 +60,7 @@ public sealed partial class EntryEditorDialog : ContentDialog
             Motion.PopIn(Avatar, 60);
             TitleBox.Focus(FocusState.Programmatic);
             // Neuer Login ohne Passwort → direkt einen Vorschlag machen
-            if (isNew && string.IsNullOrEmpty(PasswordInput.Password) && _category != Categories.Notes)
+            if (isNew && string.IsNullOrEmpty(PasswordInput.Password) && _category is not (Categories.Notes or Categories.Cards))
                 Generate();
         };
     }
@@ -83,9 +85,22 @@ public sealed partial class EntryEditorDialog : ContentDialog
             return;
         }
 
+        bool card = _category == Categories.Cards;
+        var expiry = ExpiryBox.Text.Trim();
+        if (card && expiry.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(expiry, @"^(0[1-9]|1[0-2])/\d{2}$"))
+        {
+            args.Cancel = true;
+            ShowValidation("Ablaufdatum bitte als MM/JJ eingeben (z.B. 08/29).");
+            Motion.Shake(ExpiryBox);
+            return;
+        }
+
         _entry.Title = TitleBox.Text.Trim();
         _entry.Username = UsernameBox.Text.Trim();
-        _entry.Password = PasswordInput.Password;
+        // Leerzeichen aus der Kartennummer entfernen, damit Kopieren/Einfügen überall klappt
+        _entry.Password = card ? PasswordInput.Password.Replace(" ", "") : PasswordInput.Password;
+        _entry.Expiry = card ? expiry : "";
+        _entry.Cvc = card ? CvcInput.Password.Trim() : "";
         _entry.Url = url;
         _entry.Notes = NotesBox.Text.Trim();
         _entry.Category = _category;
@@ -133,6 +148,29 @@ public sealed partial class EntryEditorDialog : ContentDialog
     {
         foreach (var button in CategoryGrid.Children.OfType<ToggleButton>())
             button.IsChecked = button.Tag as string == _category;
+
+        // Kreditkarte: eigenes Formular statt Passwort-Generator
+        bool card = _category == Categories.Cards;
+        UsernameBox.Header = card ? "Karteninhaber" : "Benutzername / E-Mail";
+        UsernameBox.PlaceholderText = card ? "Max Mustermann" : "name@example.com";
+        PasswordInput.Header = card ? "Kartennummer" : "Passwort";
+        PasswordInput.PlaceholderText = card ? "1234 5678 9012 3456" : "Passwort eingeben oder generieren";
+        var passwordOnly = card ? Visibility.Collapsed : Visibility.Visible;
+        GenerateButton.Visibility = GeneratorOptions.Visibility = StrengthRow.Visibility = passwordOnly;
+        var wasHidden = CardPanel.Visibility != Visibility.Visible;
+        CardPanel.Visibility = card ? Visibility.Visible : Visibility.Collapsed;
+        if (card && wasHidden && !_initializing) Motion.FadeInUp(CardPanel, 0, 8);
+    }
+
+    // "0829" → "08/29" beim Tippen
+    private void ExpiryBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var text = ExpiryBox.Text;
+        if (text.Length == 3 && !text.Contains('/') && char.IsDigit(text[2]))
+        {
+            ExpiryBox.Text = text[..2] + "/" + text[2];
+            ExpiryBox.SelectionStart = ExpiryBox.Text.Length;
+        }
     }
 
     private void Password_Changed(object sender, RoutedEventArgs e) => UpdateStrength();

@@ -23,7 +23,8 @@ public static class SecurityAnalyzer
     public static SecurityReport Analyze(IReadOnlyCollection<PasswordEntry> entries, DateTime? now = null)
     {
         var reference = now ?? DateTime.UtcNow;
-        var withPassword = entries.Where(e => !string.IsNullOrEmpty(e.Password)).ToList();
+        // Kartennummern sind keine Passwörter → nicht auf Stärke/Wiederverwendung prüfen
+        var withPassword = entries.Where(e => !string.IsNullOrEmpty(e.Password) && e.Category != Categories.Cards).ToList();
 
         var weak = withPassword
             .Where(e => PasswordStrength.Evaluate(e.Password).Level <= StrengthLevel.Weak)

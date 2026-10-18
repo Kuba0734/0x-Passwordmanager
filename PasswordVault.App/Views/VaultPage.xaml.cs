@@ -289,11 +289,16 @@ public sealed partial class VaultPage : Page
         else
             FavoriteIcon.ClearValue(FontIcon.ForegroundProperty);
 
+        bool card = entry.Category == Categories.Cards;
+        UserLabel.Text = card ? "KARTENINHABER" : "BENUTZERNAME";
+        PasswordLabel.Text = card ? "KARTENNUMMER" : "PASSWORT";
         UserField.Visibility = Ui.VisibleIf(entry.Username);
         DetailUser.Text = entry.Username;
 
         PasswordField.Visibility = Ui.VisibleIf(entry.Password);
-        StrengthPanel.Visibility = PasswordField.Visibility;
+        StrengthPanel.Visibility = card ? Visibility.Collapsed : PasswordField.Visibility;
+        CardField.Visibility = card && (entry.Expiry.Length > 0 || entry.Cvc.Length > 0) ? Visibility.Visible : Visibility.Collapsed;
+        DetailExpiry.Text = entry.Expiry.Length > 0 ? entry.Expiry : "–";
         SetPasswordMasked();
         RevealIcon.Glyph = "";
 
@@ -328,6 +333,7 @@ public sealed partial class VaultPage : Page
         var length = Math.Clamp(_selected?.Password.Length ?? 0, 8, 18);
         DetailPassword.Inlines.Clear();
         DetailPassword.Text = new string('•', length);
+        DetailCvc.Text = string.IsNullOrEmpty(_selected?.Cvc) ? "–" : "•••";
     }
 
     // ================= Layout (breit / schmal) =================
@@ -500,6 +506,7 @@ public sealed partial class VaultPage : Page
         if (_revealed)
         {
             Ui.SetColoredPassword(DetailPassword, _selected.Password);
+            if (_selected.Cvc.Length > 0) DetailCvc.Text = _selected.Cvc;
             RevealIcon.Glyph = "";
         }
         else
@@ -521,6 +528,13 @@ public sealed partial class VaultPage : Page
     {
         if (_selected == null) return;
         ClipboardHelper.CopySecret(_selected.Password);
+        Motion.Pulse((UIElement)sender);
+    }
+
+    private void CopyCvc_Click(object sender, RoutedEventArgs e)
+    {
+        if (_selected == null) return;
+        ClipboardHelper.CopySecret(_selected.Cvc, "CVC");
         Motion.Pulse((UIElement)sender);
     }
 

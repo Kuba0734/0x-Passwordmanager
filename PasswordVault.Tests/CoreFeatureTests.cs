@@ -124,7 +124,7 @@ public class CsvServiceTests
         {
             new() { Title = "Komma, \"Quote\"", Username = "u", Password = "p,\"x\"",
                     Notes = "Zeile1\nZeile2", Url = "https://a.de",
-                    Category = Categories.Cards, IsFavorite = true }
+                    Category = Categories.Cards, IsFavorite = true, Expiry = "12/29", Cvc = "123" }
         };
 
         var imported = csv.Import(csv.Export(original));
@@ -135,6 +135,8 @@ public class CsvServiceTests
         Assert.Equal(original[0].Notes, imported[0].Notes);
         Assert.Equal(Categories.Cards, imported[0].Category);
         Assert.True(imported[0].IsFavorite);
+        Assert.Equal("12/29", imported[0].Expiry);
+        Assert.Equal("123", imported[0].Cvc);
     }
 
     [Fact]

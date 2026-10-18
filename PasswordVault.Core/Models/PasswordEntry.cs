@@ -8,6 +8,9 @@ public class PasswordEntry
     public string Password { get; set; } = string.Empty;
     public string Url { get; set; } = string.Empty;
     public string Notes { get; set; } = string.Empty;
+    // Nur für Kreditkarten: Username = Karteninhaber, Password = Kartennummer
+    public string Expiry { get; set; } = string.Empty;
+    public string Cvc { get; set; } = string.Empty;
     public string Category { get; set; } = Categories.General;
     public bool IsFavorite { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

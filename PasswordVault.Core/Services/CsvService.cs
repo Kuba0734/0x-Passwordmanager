@@ -11,7 +11,7 @@ public class CsvService
     public string Export(IEnumerable<PasswordEntry> entries)
     {
         var sb = new StringBuilder();
-        sb.Append("name,url,username,password,note,category,favorite\r\n");
+        sb.Append("name,url,username,password,note,category,favorite,expiry,cvc\r\n");
 
         foreach (var e in entries)
         {
@@ -22,7 +22,9 @@ public class CsvService
                 Escape(e.Password),
                 Escape(e.Notes),
                 Escape(e.Category),
-                e.IsFavorite ? "1" : "0"));
+                e.IsFavorite ? "1" : "0",
+                Escape(e.Expiry),
+                Escape(e.Cvc)));
             sb.Append("\r\n");
         }
 
@@ -47,6 +49,8 @@ public class CsvService
         var noteIdx = FindIndex(header, "note", "notes", "comments", "extra");
         var catIdx = FindIndex(header, "category", "folder", "group");
         var favIdx = FindIndex(header, "favorite", "favourite");
+        var expIdx = FindIndex(header, "expiry");
+        var cvcIdx = FindIndex(header, "cvc");
 
         if (pwIdx < 0 && userIdx < 0) return entries;
 
@@ -75,6 +79,8 @@ public class CsvService
                 Username = GetCol(cols, userIdx),
                 Password = GetCol(cols, pwIdx),
                 Notes = GetCol(cols, noteIdx),
+                Expiry = GetCol(cols, expIdx),
+                Cvc = GetCol(cols, cvcIdx),
                 Category = category,
                 IsFavorite = fav is "1" or "true" or "yes" or "ja"
             });
