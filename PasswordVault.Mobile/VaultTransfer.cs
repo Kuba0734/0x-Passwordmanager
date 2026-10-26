@@ -90,9 +90,7 @@ public static class VaultTransfer
 
         var message = $"{fresh.Count} neue Einträge gefunden.";
         if (imported.Count > fresh.Count) message += $" {imported.Count - fresh.Count} Duplikate werden übersprungen.";
-        message += "
-
-Tipp: Lösche die CSV-Datei danach – sie ist unverschlüsselt.";
+        message += "\n\nTipp: Lösche die CSV-Datei danach – sie ist unverschlüsselt.";
         if (!await page.DisplayAlertAsync("Import bestätigen", message, "Importieren", "Abbrechen"))
             return 0;
 
