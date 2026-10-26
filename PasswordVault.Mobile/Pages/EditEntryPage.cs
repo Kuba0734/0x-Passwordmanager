@@ -20,13 +20,18 @@ public class EditEntryPage : ContentPage
     private readonly Switch _favorite = new();
     private readonly Entry _expiry = new() { Placeholder = "MM/JJ", Keyboard = Keyboard.Numeric, MaxLength = 5, FontFamily = "Menlo" };
     private readonly Entry _cvc = new() { Placeholder = "123", Keyboard = Keyboard.Numeric, MaxLength = 4, IsPassword = true, FontFamily = "Menlo" };
-    private readonly Slider _length = new(8, 64, 20);
-    private readonly Switch _symbols = new() { IsToggled = true };
+    private readonly Slider _length = new(8, 64, MobileSettings.Length);
+    private readonly Switch _upper = new() { IsToggled = MobileSettings.Upper };
+    private readonly Switch _lower = new() { IsToggled = MobileSettings.Lower };
+    private readonly Switch _digits = new() { IsToggled = MobileSettings.Digits };
+    private readonly Switch _symbols = new() { IsToggled = MobileSettings.Symbols };
+    private readonly Switch _ambiguous = new() { IsToggled = MobileSettings.ExcludeAmbiguous };
 
-    public EditEntryPage(PasswordEntry? existing)
+    /// <param name="existing">Zu bearbeitender Eintrag, oder Vorlage für einen neuen (<paramref name="isNew"/>).</param>
+    public EditEntryPage(PasswordEntry? existing, bool isNew = false)
     {
-        _isNew = existing == null;
-        _entry = existing?.Clone() ?? new PasswordEntry();
+        _isNew = existing == null || isNew;
+        _entry = existing?.Clone() ?? new PasswordEntry { Category = Categories.Logins };
         Title = _isNew ? "Neuer Eintrag" : "Bearbeiten";
         ToolbarItems.Add(new ToolbarItem("Sichern", null, Save));
 
@@ -54,8 +59,8 @@ public class EditEntryPage : ContentPage
         });
         var generate = Ui.IconButton(Ui.Icons.Refresh, "Passwort erzeugen", async (_, _) => await GenerateAsync());
 
-        var lengthLabel = new Label { Text = "Länge 20", FontSize = 14, TextColor = Ui.Muted, VerticalOptions = LayoutOptions.Center };
-        _length.ValueChanged += (_, e) => lengthLabel.Text = $"Länge {(int)e.NewValue}";
+        var lengthLabel = new Label { Text = $"Länge {(int)_length.Value}", FontSize = 14, TextColor = Ui.Muted, VerticalOptions = LayoutOptions.Center };
+        _length.ValueChanged += (_, e) => lengthLabel.Text = $"Länge {(int)Math.Round(e.NewValue)}";
         var generator = Ui.Card(new VerticalStackLayout
         {
             Spacing = 6,
@@ -68,7 +73,11 @@ public class EditEntryPage : ContentPage
                     ColumnSpacing = 10,
                     Children = { lengthLabel, WithColumn(_length, 1) }
                 },
-                Row("Sonderzeichen", _symbols)
+                Row("Großbuchstaben (A–Z)", _upper),
+                Row("Kleinbuchstaben (a–z)", _lower),
+                Row("Ziffern (0–9)", _digits),
+                Row("Sonderzeichen", _symbols),
+                Row("Verwechselbare meiden", _ambiguous)
             }
         });
 
@@ -136,7 +145,11 @@ public class EditEntryPage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        if (_isNew) _title.Focus();
+        if (!_isNew) return;
+        _title.Focus();
+        // Neuer Login ohne Passwort → direkt einen Vorschlag machen
+        if (string.IsNullOrEmpty(_password.Text) && _category.SelectedItem as string is not (Categories.Notes or Categories.Cards))
+            _ = GenerateAsync();
     }
 
     private static View WithColumn(View view, int column)
@@ -163,7 +176,10 @@ public class EditEntryPage : ContentPage
             && !await DisplayAlertAsync("Passwort ersetzen?", "Das aktuelle Passwort wird überschrieben.", "Ersetzen", "Abbrechen"))
             return;
 
-        _password.Text = new PasswordGenerator().Generate((int)_length.Value, useSymbols: _symbols.IsToggled);
+        if (!_upper.IsToggled && !_lower.IsToggled && !_digits.IsToggled && !_symbols.IsToggled)
+            _lower.IsToggled = true;
+        _password.Text = new PasswordGenerator().Generate((int)Math.Round(_length.Value), _lower.IsToggled, _upper.IsToggled,
+            _digits.IsToggled, _symbols.IsToggled, _ambiguous.IsToggled);
         _password.IsPassword = false;
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
         await _password.ScaleToAsync(1.02, Ui.Fast, Ui.Ease);
@@ -177,6 +193,14 @@ public class EditEntryPage : ContentPage
         {
             Ui.Toast(this, "Bitte einen Titel eingeben", error: true);
             await Ui.Shake(_title);
+            return;
+        }
+
+        var url = _url.Text?.Trim() ?? "";
+        if (url.Length > 0 && UrlMatcher.GetHost(url) == null)
+        {
+            Ui.Toast(this, "Website-Adresse sieht ungültig aus", error: true);
+            await Ui.Shake(_url);
             return;
         }
 
@@ -195,8 +219,8 @@ public class EditEntryPage : ContentPage
         _entry.Password = card ? (_password.Text ?? "").Replace(" ", "") : _password.Text ?? "";
         _entry.Expiry = card ? expiry : "";
         _entry.Cvc = card ? _cvc.Text?.Trim() ?? "" : "";
-        _entry.Url = _url.Text?.Trim() ?? "";
-        _entry.Notes = _notes.Text ?? "";
+        _entry.Url = url;
+        _entry.Notes = _notes.Text?.Trim() ?? "";
         _entry.Category = category;
         _entry.IsFavorite = _favorite.IsToggled;
 
@@ -212,6 +236,7 @@ public class EditEntryPage : ContentPage
         }
 
         HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        if (_isNew) Ui.Toast(Navigation.NavigationStack[^2], $"„{_entry.Title}“ wurde gespeichert");
         await Navigation.PopAsync();
     }
 

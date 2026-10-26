@@ -162,6 +162,76 @@ public static class Ui
         return Card(grid, new Thickness(16, 10, 8, 6));
     }
 
+    public static Label Section(string text) => new()
+    {
+        Text = text,
+        FontSize = 20,
+        FontFamily = FontBold,
+        Margin = new Thickness(4, 12, 0, 0)
+    };
+
+    public static Label Hint(string text) => new() { Text = text, TextColor = Muted, FontSize = 14 };
+
+    /// <summary>Zeile mit Titel, optionaler Beschreibung und einem Steuerelement rechts.</summary>
+    public static Grid SettingRow(string title, string? description, View control)
+    {
+        control.HorizontalOptions = LayoutOptions.End;
+        control.VerticalOptions = LayoutOptions.Center;
+        var text = new VerticalStackLayout { Spacing = 2, VerticalOptions = LayoutOptions.Center, Children = { new Label { Text = title, FontSize = 16 } } };
+        if (description != null) text.Add(new Label { Text = description, FontSize = 13, TextColor = Muted });
+        var grid = new Grid { ColumnDefinitions = { new(GridLength.Star), new(GridLength.Auto) }, ColumnSpacing = 12, MinimumHeightRequest = 44 };
+        grid.Add(text, 0, 0);
+        grid.Add(control, 1, 0);
+        return grid;
+    }
+
+    public static string RelativeTime(DateTime utc)
+    {
+        var span = DateTime.UtcNow - utc;
+        if (span.TotalMinutes < 1) return "gerade eben";
+        if (span.TotalHours < 1) return $"vor {(int)span.TotalMinutes} Min.";
+        if (span.TotalDays < 1) return $"vor {(int)span.TotalHours} Std.";
+        if (span.TotalDays < 30) return $"vor {(int)span.TotalDays} Tagen";
+        return utc.ToLocalTime().ToString("dd.MM.yyyy");
+    }
+
+    /// <summary>Passwort mit abgesetzten Ziffern und Sonderzeichen (monochrom, wie am PC).</summary>
+    public static FormattedString ColoredPassword(string password)
+    {
+        var text = new FormattedString();
+        Span? current = null;
+        int kind = -1;
+        foreach (var ch in password)
+        {
+            int k = char.IsDigit(ch) ? 1 : char.IsLetter(ch) ? 0 : 2;
+            if (current == null || k != kind)
+            {
+                current = new Span { TextColor = k == 0 ? Text : Muted };
+                text.Spans.Add(current);
+                kind = k;
+            }
+            current.Text += ch;
+        }
+        return text;
+    }
+
+    /// <summary>Zahl zählt animiert hoch; <paramref name="onStep"/> bekommt den Zwischenwert.</summary>
+    public static void CountUp(Label label, int target, Action<double>? onStep = null)
+    {
+        label.AbortAnimation("count");
+        if (ReduceMotion || target == 0)
+        {
+            label.Text = target.ToString();
+            onStep?.Invoke(target);
+            return;
+        }
+        new Animation(v =>
+        {
+            label.Text = ((int)Math.Round(v)).ToString();
+            onStep?.Invoke(v);
+        }, 0, target).Commit(label, "count", 16, 1100, Easing.CubicOut);
+    }
+
     public static Button PrimaryButton(string text) => Pressable(new Button
     {
         Text = text,
@@ -207,6 +277,10 @@ public static class Ui
         public const string Plus = "M12 5v14 M5 12h14";
         public const string Check = "M5 12.5l4.5 4.5L19 7.5";
         public const string Alert = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z M12 7.5v5.5 M12 16.5v.01";
+        public const string Shield = "M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z";
+        public const string Sort = "M7 4v16 M3 16l4 4 4-4 M17 20V4 M13 8l4-4 4 4";
+        public const string Chevron = "M9 6l6 6-6 6";
+        public const string FaceId = "M4 8V6a2 2 0 0 1 2-2h2 M16 4h2a2 2 0 0 1 2 2v2 M20 16v2a2 2 0 0 1-2 2h-2 M8 20H6a2 2 0 0 1-2-2v-2 M9 9v1 M15 9v1 M12 9v4h-1 M9 16c1.5 1 4.5 1 6 0";
     }
 
     public static View Icon(string data, double size = 20, Color? color = null, bool filled = false)

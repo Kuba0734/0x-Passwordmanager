@@ -54,13 +54,17 @@ public class EntryPage : ContentPage
         ((View)header.Children[0]).HorizontalOptions = LayoutOptions.Center;
         views.Add(header);
 
+        var favorite = Ui.SecondaryButton(e.IsFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten");
+        favorite.Clicked += async (_, _) => await ToggleFavoriteAsync(favorite);
+        views.Add(favorite);
+
         bool card = e.Category == Categories.Cards;
         var userCaption = card ? "Karteninhaber" : "Benutzername";
         var pwCaption = card ? "Kartennummer" : "Passwort";
 
         if (!string.IsNullOrEmpty(e.Username))
             views.Add(Ui.Field(userCaption, Value(e.Username),
-                Ui.IconButton(Ui.Icons.Copy, $"{userCaption} kopieren", (_, _) => Copy(e.Username, $"{userCaption} kopiert"))));
+                Ui.IconButton(Ui.Icons.Copy, $"{userCaption} kopieren", (_, _) => CopyPlain(e.Username, $"{userCaption} kopiert"))));
 
         if (!string.IsNullOrEmpty(e.Password))
         {
@@ -74,7 +78,7 @@ public class EntryPage : ContentPage
                 Ui.SetIcon(toggle!, _showPassword ? Ui.Icons.EyeOff : Ui.Icons.Eye);
             });
             views.Add(Ui.Field(pwCaption, pw, toggle,
-                Ui.IconButton(Ui.Icons.Copy, $"{pwCaption} kopieren", (_, _) => Copy(e.Password, $"{pwCaption} kopiert – wird in 30 s gelöscht"))));
+                Ui.IconButton(Ui.Icons.Copy, $"{pwCaption} kopieren", (_, _) => Copy(e.Password, $"{pwCaption} kopiert – wird in {MobileSettings.ClipboardSeconds} s gelöscht"))));
 
             if (!card)
             {
@@ -100,20 +104,20 @@ public class EntryPage : ContentPage
                 Ui.SetIcon(toggle!, shown ? Ui.Icons.EyeOff : Ui.Icons.Eye);
             });
             views.Add(Ui.Field("CVC", cvc, toggle,
-                Ui.IconButton(Ui.Icons.Copy, "CVC kopieren", (_, _) => Copy(e.Cvc, "CVC kopiert – wird in 30 s gelöscht"))));
+                Ui.IconButton(Ui.Icons.Copy, "CVC kopieren", (_, _) => Copy(e.Cvc, $"CVC kopiert – wird in {MobileSettings.ClipboardSeconds} s gelöscht"))));
         }
 
         if (!string.IsNullOrEmpty(e.Url))
             views.Add(Ui.Field("Website", Value(e.Url),
                 Ui.IconButton(Ui.Icons.External, "Website öffnen", async (_, _) => await OpenUrl(e.Url)),
-                Ui.IconButton(Ui.Icons.Copy, "Website kopieren", (_, _) => Copy(e.Url, "Adresse kopiert"))));
+                Ui.IconButton(Ui.Icons.Copy, "Website kopieren", (_, _) => CopyPlain(e.Url, "Adresse kopiert"))));
 
         if (!string.IsNullOrEmpty(e.Notes))
             views.Add(Ui.Field("Notizen", Value(e.Notes, wrap: true)));
 
         views.Add(new Label
         {
-            Text = $"Geändert {e.ModifiedAt.ToLocalTime():dd.MM.yyyy HH:mm} · erstellt {e.CreatedAt.ToLocalTime():dd.MM.yyyy}",
+            Text = $"Geändert {Ui.RelativeTime(e.ModifiedAt)} · erstellt {e.CreatedAt.ToLocalTime():dd.MM.yyyy}",
             TextColor = Ui.Muted,
             FontSize = 12,
             HorizontalTextAlignment = TextAlignment.Center,
@@ -140,6 +144,25 @@ public class EntryPage : ContentPage
     {
         SecureClipboard.Copy(text);
         Ui.Toast(this, message);
+    }
+
+    private void CopyPlain(string text, string message)
+    {
+        SecureClipboard.CopyPlain(text);
+        Ui.Toast(this, message);
+    }
+
+    private async Task ToggleFavoriteAsync(Button button)
+    {
+        if (_entry == null) return;
+        _entry.IsFavorite = !_entry.IsFavorite;
+        App.Store.Update(_entry);
+        _entry = App.Store.Get(_id);
+        button.Text = _entry?.IsFavorite == true ? "Aus Favoriten entfernen" : "Zu Favoriten";
+        HapticFeedback.Default.Perform(HapticFeedbackType.Click);
+        Ui.Toast(this, _entry?.IsFavorite == true ? "Zu Favoriten hinzugefügt" : "Aus Favoriten entfernt");
+        await button.ScaleToAsync(1.04, Ui.Fast, Ui.Ease);
+        await button.ScaleToAsync(1, Ui.Normal, Ui.Ease);
     }
 
     private async Task OpenUrl(string url)

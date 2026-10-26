@@ -26,8 +26,7 @@ public class App : Application
         return _window;
     }
 
-    // Kurz zur anderen App wechseln (Passwort einfügen) soll nicht sofort sperren
-    private static readonly TimeSpan LockAfter = TimeSpan.FromSeconds(60);
+    // Kurz zur anderen App wechseln (Passwort einfügen) soll nicht sofort sperren – Dauer in den Einstellungen
     private static DateTime _backgroundSince;
 
     private static void OnBackground()
@@ -39,11 +38,11 @@ public class App : Application
 
     private static void OnForeground()
     {
-        if (DateTime.UtcNow - _backgroundSince > LockAfter) Lock();
+        if (DateTime.UtcNow - _backgroundSince >= TimeSpan.FromSeconds(MobileSettings.LockAfterSeconds)) Lock();
         if (_window?.Page != null) _window.Page.Opacity = 1;
     }
 
-    public static void ShowVault() => SetPage(new NavigationPage(new VaultPage()) { BarBackgroundColor = Ui.Bg, BarTextColor = Ui.Text });
+    public static void ShowVault() => SetPage(new MainTabs());
 
     public static void Lock()
     {
@@ -53,6 +52,8 @@ public class App : Application
     public static void ShowUnlock()
     {
         Store.Lock();
+        GeneratorPage.ClearHistory();
+        VaultTransfer.DeleteCsvExports();
         SetPage(new UnlockPage());
     }
 

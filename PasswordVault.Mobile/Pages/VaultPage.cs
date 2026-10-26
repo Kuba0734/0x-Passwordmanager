@@ -4,7 +4,7 @@ using PasswordVault.Core.Models;
 namespace PasswordVault.Mobile.Pages;
 
 /// <summary>
-/// Liste aller Einträge mit Suche und Filtern. Wischen nach links kopiert das Passwort.
+/// Liste aller Einträge mit Suche, Filtern und Sortierung. Wischen nach links kopiert das Passwort.
 /// </summary>
 public class VaultPage : ContentPage
 {
@@ -23,14 +23,23 @@ public class VaultPage : ContentPage
     private readonly HorizontalStackLayout _chips = new() { Spacing = 8, Padding = new Thickness(16, 0) };
     private readonly CollectionView _list = new() { SelectionMode = SelectionMode.None };
     private readonly Label _count = new() { TextColor = Ui.Muted, FontSize = 13, Margin = new Thickness(20, 4, 20, 0) };
+    private readonly Label _emptyTitle = new() { FontSize = 18, FontFamily = Ui.FontBold, HorizontalTextAlignment = TextAlignment.Center };
+    private readonly Label _emptyText = new() { TextColor = Ui.Muted, HorizontalTextAlignment = TextAlignment.Center };
     private List<PasswordEntry> _entries = new();
     private string _filter = All;
+
+    private static readonly (string Label, string Key)[] Sorts = { ("Name", "name"), ("Zuletzt geändert", "modified"), ("Zuletzt erstellt", "created") };
+    private static string SortKey
+    {
+        get => Preferences.Default.Get("sort", "name");
+        set => Preferences.Default.Set("sort", value);
+    }
 
     public VaultPage()
     {
         Title = "Tresor";
         ToolbarItems.Add(new ToolbarItem("Sperren", null, App.ShowUnlock));
-        ToolbarItems.Add(new ToolbarItem("Einstellungen", null, async () => await Ui.Push(Navigation, new SettingsPage())));
+        ToolbarItems.Add(new ToolbarItem("Sortieren", null, async () => await ChooseSortAsync()));
 
         foreach (var name in new[] { All, Favorites }.Concat(Categories.All))
             _chips.Add(CreateChip(name));
@@ -45,8 +54,8 @@ public class VaultPage : ContentPage
             Children =
             {
                 Ui.Icon(Ui.Icons.Key, 44, Ui.Muted),
-                new Label { Text = "Keine Einträge", FontSize = 18, FontFamily = Ui.FontBold, HorizontalTextAlignment = TextAlignment.Center },
-                new Label { Text = "Tippe auf + um ein Passwort hinzuzufügen.", TextColor = Ui.Muted, HorizontalTextAlignment = TextAlignment.Center }
+                _emptyTitle,
+                _emptyText
             }
         };
 
@@ -69,7 +78,7 @@ public class VaultPage : ContentPage
         {
             await add.ScaleToAsync(0.97, Ui.Fast, Ui.Ease);
             await add.ScaleToAsync(1, Ui.Normal, Ui.Ease);
-            await Ui.Push(Navigation, new EditEntryPage(null));
+            await Ui.Push(Navigation, new EditEntryPage(NewEntryPreset(), isNew: true));
         };
         add.GestureRecognizers.Add(addTap);
 
@@ -97,7 +106,7 @@ public class VaultPage : ContentPage
     private void Refresh()
     {
         var q = _search.Text?.Trim() ?? "";
-        var items = _entries
+        var filtered = _entries
             .Where(e => _filter switch
             {
                 All => true,
@@ -107,12 +116,44 @@ public class VaultPage : ContentPage
             .Where(e => q.Length == 0
                 || e.Title.Contains(q, StringComparison.CurrentCultureIgnoreCase)
                 || e.Username.Contains(q, StringComparison.CurrentCultureIgnoreCase)
-                || e.Url.Contains(q, StringComparison.CurrentCultureIgnoreCase))
-            .OrderByDescending(e => e.IsFavorite)
-            .ThenBy(e => e.Title, StringComparer.CurrentCultureIgnoreCase)
-            .ToList();
+                || e.Url.Contains(q, StringComparison.CurrentCultureIgnoreCase)
+                || e.Notes.Contains(q, StringComparison.CurrentCultureIgnoreCase));
+        var items = (SortKey switch
+        {
+            "modified" => filtered.OrderByDescending(e => e.ModifiedAt),
+            "created" => filtered.OrderByDescending(e => e.CreatedAt),
+            _ => filtered.OrderByDescending(e => e.IsFavorite).ThenBy(e => e.Title, StringComparer.CurrentCultureIgnoreCase)
+        }).ToList();
         _list.ItemsSource = items;
-        _count.Text = items.Count == 1 ? "1 Eintrag" : $"{items.Count} Einträge";
+
+        var favorites = _entries.Count(e => e.IsFavorite);
+        _count.Text = q.Length > 0
+            ? $"{items.Count} Treffer für „{q}“"
+            : (items.Count == 1 ? "1 Eintrag" : $"{items.Count} Einträge") + (_filter == All && favorites > 0 ? $" · {favorites} Favoriten" : "");
+
+        (_emptyTitle.Text, _emptyText.Text) = q.Length > 0
+            ? ("Keine Treffer", $"Für „{q}“ wurde nichts gefunden.")
+            : _entries.Count == 0
+                ? ("Noch keine Einträge", "Tippe auf + um deinen ersten Zugang hinzuzufügen – er wird sofort verschlüsselt gespeichert.")
+                : _filter == Favorites
+                    ? ("Hier ist noch nichts", "Markiere Einträge als Favorit, um sie hier schnell wiederzufinden.")
+                    : ("Hier ist noch nichts", "In dieser Kategorie gibt es noch keine Einträge.");
+    }
+
+    private PasswordEntry NewEntryPreset() => new()
+    {
+        Category = Categories.All.Contains(_filter) ? _filter : Categories.Logins,
+        IsFavorite = _filter == Favorites
+    };
+
+    private async Task ChooseSortAsync()
+    {
+        var choice = await DisplayActionSheetAsync("Sortieren nach", "Abbrechen", null,
+            Sorts.Select(s => (s.Key == SortKey ? "✓ " : "") + s.Label).ToArray());
+        var match = Sorts.FirstOrDefault(s => choice != null && choice.EndsWith(s.Label));
+        if (match.Key == null) return;
+        SortKey = match.Key;
+        Refresh();
     }
 
     private Button CreateChip(string name)

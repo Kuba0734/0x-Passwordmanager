@@ -23,6 +23,24 @@ iOS-Werkzeuge die Windows-App weiter normal öffnet und baut.
 
 Die Signatur gilt **7 Tage**. Danach Schritt 2 wiederholen – die Daten in der App bleiben erhalten.
 
+## Dauerhaft kostenlos nutzen
+
+Apple begrenzt Apps, die mit einer kostenlosen Apple-ID signiert sind, auf 7 Tage. Das lässt sich nicht abschalten
+(nur das Entwicklerprogramm für 99 €/Jahr signiert für ein Jahr), aber das Erneuern lässt sich automatisieren:
+
+| Weg | Wie | PC nötig? |
+|---|---|---|
+| **SideStore** (empfohlen) | Einmal mit dem PC einrichten (Anleitung auf sidestore.io), danach `PasswordVault.ipa` in SideStore öffnen. SideStore erneuert die Signatur auf dem iPhone selbst – alle paar Tage „Refresh All“ tippen oder per Kurzbefehle-Automation täglich. | nur einmal |
+| **AltStore + AltServer** | AltServer läuft auf dem PC, iPhone im selben WLAN: AltStore erneuert im Hintergrund automatisch. | ja, muss laufen |
+| **Sideloadly** | Beim Installieren „Automatic refresh“ aktivieren und in iTunes „Mit diesem iPhone über WLAN synchronisieren“ einschalten. Sideloadly erneuert, solange es im Hintergrund läuft. | ja, muss laufen |
+
+Wichtig:
+
+- Immer **dieselbe Apple-ID** verwenden, sonst gilt die App als neu und Tresor sowie Face ID sind auf dem iPhone weg.
+- Ist die Signatur doch einmal abgelaufen, startet die App nur nicht – einfach neu installieren, die Daten bleiben.
+- Mit kostenloser Apple-ID sind höchstens 3 selbst installierte Apps gleichzeitig möglich.
+- Regelmäßig „Tresor sichern“ nutzen, dann ist auch ein verlorenes iPhone kein Problem.
+
 ## Tresor abgleichen
 
 - PC → iPhone: am PC Einstellungen → beim Speicherort „Ordner öffnen“, `vault.dat` nach iCloud Drive/OneDrive

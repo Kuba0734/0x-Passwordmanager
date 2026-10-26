@@ -34,6 +34,8 @@
 	<true/>
 	<key>UIUserInterfaceStyle</key>
 	<string>Dark</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Entsperrt den Tresor ohne Master-Passwort.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 </dict>

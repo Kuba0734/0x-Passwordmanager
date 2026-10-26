@@ -16,6 +16,7 @@ public class UnlockPage : ContentPage
     private readonly ActivityIndicator _busy = new() { Color = Ui.Accent, IsRunning = false, HeightRequest = 24 };
     private readonly Border _logo;
     private readonly View _form;
+    private bool _biometricTried;
 
     public UnlockPage()
     {
@@ -57,6 +58,9 @@ public class UnlockPage : ContentPage
         var fields = new VerticalStackLayout { Spacing = 10, Children = { Ui.Field("Master-Passwort", _password) } };
         if (_create)
         {
+            var (meter, updateMeter) = Ui.StrengthMeter();
+            _password.TextChanged += (_, e) => updateMeter(e.NewTextValue ?? "");
+            fields.Add(meter);
             fields.Add(Ui.Field("Passwort wiederholen", _repeat));
             fields.Add(new Label
             {
@@ -77,6 +81,12 @@ public class UnlockPage : ContentPage
             };
             form.Add(import);
         }
+        else if (Biometrics.IsEnabled)
+        {
+            var biometric = Ui.SecondaryButton($"Mit {Biometrics.Name} entsperren");
+            biometric.Clicked += async (_, _) => await BiometricUnlockAsync();
+            form.Add(biometric);
+        }
         _form = form;
 
         var stack = new VerticalStackLayout
@@ -92,11 +102,28 @@ public class UnlockPage : ContentPage
         Ui.AnimateIn(_logo, title, subtitle, _form);
     }
 
-    protected override void OnAppearing()
+    protected override async void OnAppearing()
     {
         base.OnAppearing();
-        _password.Focus();
         _ = Breathe();
+        if (!_create && Biometrics.IsEnabled && !_biometricTried)
+        {
+            _biometricTried = true;
+            // Kurz warten, bis die Seite steht, sonst bricht iOS die Face-ID-Abfrage ab
+            await Task.Delay(350);
+            if (await BiometricUnlockAsync()) return;
+        }
+        _password.Focus();
+    }
+
+    private async Task<bool> BiometricUnlockAsync()
+    {
+        if (_busy.IsRunning) return false;
+        var pw = await Task.Run(() => Biometrics.Load());
+        if (pw == null) return false;
+        _password.Text = pw;
+        await SubmitAsync();
+        return App.Store.IsUnlocked;
     }
 
     // Logo "atmet" leicht, solange die Seite offen ist
@@ -132,6 +159,8 @@ public class UnlockPage : ContentPage
                 if (_create) App.Store.Create(pw);
                 else App.Store.Unlock(pw);
             });
+            // Tresor vom PC mit anderem Passwort übernommen → Face ID bekommt das aktuelle
+            if (Biometrics.IsEnabled) Biometrics.Store(pw);
             HapticFeedback.Default.Perform(HapticFeedbackType.Click);
             await Task.WhenAll(_logo.ScaleToAsync(1.08, Ui.Normal, Ui.Ease), _form.FadeToAsync(0, Ui.Fast, Ui.Ease));
             App.ShowVault();
