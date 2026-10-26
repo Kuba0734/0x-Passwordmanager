@@ -49,7 +49,7 @@ public static class Biometrics
             Account = Account,
             UseOperationPrompt = "Tresor entsperren"
         };
-        var data = SecKeyChain.QueryAsData(query, out var status);
+        var data = SecKeyChain.QueryAsData(query, false, out var status);
         return status == SecStatusCode.Success && data != null ? new NSString(data, NSStringEncoding.UTF8).ToString() : null;
     }
 
